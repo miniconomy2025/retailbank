@@ -1,10 +1,12 @@
 using TigerBeetle;
+
 namespace RetailBank.Services;
 
 public interface ITransactionService
 {
-    public Task<UInt128> CreateAccount(UInt64 SalaryCents);
-    public Task InternalTransfer(UInt128 fromAccount, UInt128 toAccount, UInt128 amount);
-    public Task ExternalTransfer(UInt128 fromAccount, UInt128 ExternalAccountId, UInt128 amount);
-
+    public Task<Account?> GetAccount(ulong accountId);
+    public Task<Transfer[]> GetAccountTransfers(ulong accountId);
+    public Task<ulong> CreateSavingAccount(ulong salaryCents);
+    public Task<ulong> CreateLoanAccount();
+    public Task Transfer(ulong fromAccount, ulong toAccount, UInt128 amountCents);
 }
