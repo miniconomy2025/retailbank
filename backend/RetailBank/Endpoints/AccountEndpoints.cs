@@ -1,4 +1,6 @@
 ﻿using RetailBank.Models;
+using RetailBank.Services;
+using TigerBeetle;
 
 namespace RetailBank.Endpoints;
 
@@ -19,23 +21,80 @@ public static class AccountEndpoints
     }
 
     public static async Task<IResult> CreateAccount(
-        CreateAccountRequest request
+        CreateAccountRequest request, ITransactionService transactionService, ILogger<TransactionService> logger
     )
     {
-        return Results.Ok(new CreateAccountResponse(UInt128.MinValue));
+        try
+        {
+            return Results.Ok(new CreateAccountResponse(await transactionService.CreateAccount(request.SalaryCents)));
+        }
+        catch (TigerBeetleResultException<CreateAccountResult> ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return Results.StatusCode(500);
+        }
     }
 
     public static async Task<IResult> TransferInternal(
-        InternalTransferRequest request
+        InternalTransferRequest request,
+        ITransactionService transactionService,
+        ILogger<TransactionService> logger
     )
     {
-        return Results.Created();
+        try
+        {
+            await transactionService.InternalTransfer(request.From, request.To, request.Amount);
+            return Results.Created();
+        }
+
+        catch (InvalidAccountException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+
+        catch (AccountNotFoundException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+
+        catch (TigerBeetleResultException<CreateTransferResult> ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return Results.StatusCode(500);
+        }
     }
 
     public static async Task<IResult> TransferExternal(
-        ExternalTransferRequest request
+        ExternalTransferRequest request,
+        ITransactionService transactionService,
+        ILogger<TransactionService> logger
     )
     {
-        return Results.Created();
+        try
+        {
+            await transactionService.ExternalTransfer(request.From, request.To, request.Amount);
+            return Results.Created();
+        }
+        catch (InvalidAccountException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (AccountNotFoundException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (ExternalTransferFailedException ex)
+        {
+            return Results.Problem(
+            detail: $"Downstream service is unavailable. {ex.Message}",
+            statusCode: 503,
+            title: "Service Unavailable");
+        }
+
+        catch (TigerBeetleResultException<CreateTransferResult> ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return Results.StatusCode(500);
+        }
     }
 }
