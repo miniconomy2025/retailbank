@@ -1,21 +1,22 @@
-using System.Threading.Tasks;
+using System.Security.Cryptography;
+using RetailBank.Models;
 using TigerBeetle;
 namespace RetailBank.Services;
 
 public class TransactionService(Client tbClient) : ITransactionService
 {
-
-    public async Task<UInt128> CreateAccount(UInt64 SalaryCents)
+    public async Task<ulong> CreateSavingsAccount(ulong salaryCents)
     {
+        var accountNumber = GenerateSavingsAccountNumber();
         var account = new Account
         {
-            Id = ID.Create(),
+            Id = accountNumber,
             UserData128 = 0,
-            UserData64 = SalaryCents,
+            UserData64 = salaryCents,
             UserData32 = 0,
             Ledger = 1,
-            Code = 2000,
-            Flags = AccountFlags.None,
+            Code = (ushort)AccountCode.Savings,
+            Flags = AccountFlags.DebitsMustNotExceedCredits,
         };
 
         var accountResult = await tbClient.CreateAccountAsync(account);
@@ -24,10 +25,45 @@ public class TransactionService(Client tbClient) : ITransactionService
             throw new TigerBeetleResultException<CreateAccountResult>(accountResult);
         }
 
-        return account.Id;
+        return accountNumber;
     }
 
-    public async Task ExternalTransfer(UInt128 fromAccountId, UInt128 ExternalAccountId, UInt128 amount)
+    public async Task<ulong> CreateLoanAccount()
+    {
+        var accountNumber = GenerateLoanAccountNumber();
+        var account = new Account
+        {
+            Id = accountNumber,
+            UserData128 = 0,
+            UserData64 = 0,
+            UserData32 = 0,
+            Ledger = 1,
+            Code = (ushort)AccountCode.Loan,
+            Flags = AccountFlags.CreditsMustNotExceedDebits,
+        };
+
+        var accountResult = await tbClient.CreateAccountAsync(account);
+        if (accountResult != CreateAccountResult.Ok)
+        {
+            throw new TigerBeetleResultException<CreateAccountResult>(accountResult);
+        }
+
+        return accountNumber;
+    }
+
+    public async Task<Account?> GetAccount(ulong accountId)
+    {
+        return await tbClient.LookupAccountAsync(accountId);
+    }
+
+    public async Task<Transfer[]> GetAccountTransfers(ulong accountId)
+    {
+        var filter = new AccountFilter();
+        filter.AccountId = accountId;
+        return await tbClient.GetAccountTransfersAsync(filter);
+    }
+
+    public async Task ExternalTransfer(ulong fromAccountId, string externalAccountId, UInt128 amount)
     {
         var fromAccount = await tbClient.LookupAccountAsync(fromAccountId) ?? throw new AccountNotFoundException(fromAccountId);
 
@@ -40,7 +76,7 @@ public class TransactionService(Client tbClient) : ITransactionService
             new Transfer
             {
                 Id = ID.Create(),
-                DebitAccountId = Constants.COMMERCIAL_BANK_ID,
+                DebitAccountId = (ushort)BankCode.Commercial,
                 CreditAccountId = fromAccountId,
                 Amount = amount,
                 Ledger = 1,
@@ -55,7 +91,7 @@ public class TransactionService(Client tbClient) : ITransactionService
             throw new TigerBeetleResultException<CreateTransferResult>(pendingTransferResult);
         }
 
-        if (!await TryExternalTransfer(ExternalAccountId, amount))
+        if (!await TryExternalTransfer(externalAccountId, amount))
         {
             // external transfer has failed, void the pending tranfer
             var cancelTransfer = new Transfer
@@ -92,7 +128,7 @@ public class TransactionService(Client tbClient) : ITransactionService
         }
     }
 
-    public async Task InternalTransfer(UInt128 fromAccountId, UInt128 toAccountId, UInt128 amount)
+    public async Task InternalTransfer(ulong fromAccountId, ulong toAccountId, UInt128 amount)
     {
         var fromAccount = await tbClient.LookupAccountAsync(fromAccountId) ?? throw new AccountNotFoundException(fromAccountId);
         var toAccount = await tbClient.LookupAccountAsync(toAccountId) ?? throw new AccountNotFoundException(toAccountId);
@@ -118,11 +154,25 @@ public class TransactionService(Client tbClient) : ITransactionService
         }
     }
 
-    private static async Task<bool> TryExternalTransfer(UInt128 ExternalAccountId, UInt128 amount)
+    private static async Task<bool> TryExternalTransfer(string externalAccountId, UInt128 amount)
     {
         // Todo: This function should attempt to call the endpoint provided by the commercial bank to initiate the transfer of 
         // funds on their end. This should try multiple times and the endpoint should be idempotent
         await Task.Delay(1000);
         return true;
+    }
+
+    // 12 digits starting with "1000"
+    private static ulong GenerateSavingsAccountNumber()
+    {
+        var number = 1000_0000_0000ul + (ulong)RandomNumberGenerator.GetInt32(1_0000_0000);
+        return number;
+    }
+
+    // 13 digits starting with "1000"
+    private static ulong GenerateLoanAccountNumber()
+    {
+        var number = 1_0000_0000_0000ul + (ulong)RandomNumberGenerator.GetInt32(10_0000_0000);
+        return number;
     }
 }
