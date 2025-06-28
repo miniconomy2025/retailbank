@@ -1,10 +1,11 @@
+using RetailBank.Models;
 using TigerBeetle;
 
 namespace RetailBank.Repositories;
 
 public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
 {
-    public async Task CreateAccount(ulong accountNumber, UInt64 userData64 = 0, UInt128? userData128 = null, UInt32 userData32 = 0, uint ledger = 1, ushort code = 1, AccountFlags accountFlags = AccountFlags.None)
+    public async Task CreateAccount(ulong accountNumber, LedgerAccountCode code, ulong userData64 = 0, UInt128? userData128 = null, uint userData32 = 0, uint ledger = 1, AccountFlags accountFlags = AccountFlags.None)
     {
         var account = new Account
         {
@@ -13,7 +14,7 @@ public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
             UserData64 = userData64,
             UserData32 = userData32,
             Ledger = ledger,
-            Code = code,
+            Code = (ushort)code,
             Flags = accountFlags,
         };
 
@@ -24,7 +25,7 @@ public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
         }
     }
 
-    public async Task Transfer(UInt128 id, ulong debitAccountId, ulong creditAccountId, UInt128 amount, uint ledger = 1, TransferFlags transferFlags = TransferFlags.None, ushort code = 1)
+    public async Task Transfer(UInt128 id, ulong debitAccountId, ulong creditAccountId, UInt128 amount, uint ledger = 1, ushort code = 1, TransferFlags transferFlags = TransferFlags.None)
     {
         var transfer = new Transfer
         {

@@ -10,7 +10,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
     public async Task<ulong> CreateSavingAccount(ulong salaryCents)
     {
         var accountNumber = GenerateSavingsAccountNumber();
-        await ledgerRepository.CreateAccount(accountNumber, userData64: salaryCents, code: (ushort)AccountCode.Savings, accountFlags: AccountFlags.DebitsMustNotExceedCredits);
+        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Savings, userData64: salaryCents, accountFlags: AccountFlags.DebitsMustNotExceedCredits);
         return accountNumber;
     }
 
@@ -19,7 +19,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
         return await tbClient.LookupAccountAsync(accountId);
     }
 
-    public async Task<List<Account>> GetAllAccountsByCodeAsync(AccountCode code)
+    public async Task<List<Account>> GetAllAccountsByCodeAsync(LedgerAccountCode code)
     {
         var allAccounts = new List<Account>();
         ulong nextTimestamp = 0;

@@ -1,6 +1,3 @@
-namespace RetailBank.Services;
-
-using System.Net;
 using System.Security.Cryptography;
 using RetailBank.Models;
 using RetailBank.Repositories;
@@ -8,13 +5,14 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : ILoanService
+public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
 {
     private readonly ushort interestRate = 10;
+    
     public async Task<ulong> CreateLoanAccount(ulong loanAmount, ulong userAccountNo)
     {
         var accountNumber = GenerateLoanAccountNumber();
-        await ledgerRepository.CreateAccount(accountNumber, userData128:userAccountNo, userData64: CalculateInstallment(loanAmount, interestRate, 60), code: (ushort)AccountCode.Loan, accountFlags: AccountFlags.CreditsMustNotExceedDebits);
+        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Loan, userData128:userAccountNo, userData64: CalculateInstallment(loanAmount, interestRate, 60), accountFlags: AccountFlags.CreditsMustNotExceedDebits);
         await ledgerRepository.Transfer(ID.Create(), accountNumber, userAccountNo, loanAmount);
         await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.LoanControlAccount, (ushort)BankCode.Retail, loanAmount);
         return accountNumber;
@@ -22,7 +20,7 @@ public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : 
 
     public async Task ComputeInterest(Account loanAccount)
     {
-        if (loanAccount.Code != (ushort)AccountCode.Loan)
+        if (loanAccount.Code != (ushort)LedgerAccountCode.Loan)
         {
             throw new InvalidAccountException();
         }
@@ -41,11 +39,11 @@ public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : 
     
         if (balance < installment)
         {
-            await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ulong)loanAccount.Id, balance);
+            await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.Bank, (ulong)loanAccount.Id, balance);
         }
         else
         {
-            await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ulong)loanAccount.Id, installment);
+            await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.Bank, (ulong)loanAccount.Id, installment);
         }
     }
 

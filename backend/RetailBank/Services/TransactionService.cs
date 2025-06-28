@@ -10,7 +10,7 @@ public class TransactionService(Client tbClient, ILedgerRepository ledgerReposit
     {
         var payerBankAccount = await tbClient.LookupAccountAsync(payerAccountId) ?? throw new AccountNotFoundException(payerAccountId);
         
-        if (payerBankAccount.Code != (int)AccountCode.Savings)
+        if (payerBankAccount.Code != (int)LedgerAccountCode.Savings)
             throw new InvalidAccountException();
         
         var payeeBankCode = GetBankCode(payeeAccountId);
@@ -19,7 +19,7 @@ public class TransactionService(Client tbClient, ILedgerRepository ledgerReposit
         {
             var payeeBankAccount = await tbClient.LookupAccountAsync(payeeAccountId) ?? throw new AccountNotFoundException(payeeAccountId);
             
-            if (payeeBankAccount.Code != (int)AccountCode.Savings) throw new InvalidAccountException();
+            if (payeeBankAccount.Code != (int)LedgerAccountCode.Savings) throw new InvalidAccountException();
             
             await InternalTransfer(payerBankAccount, payeeBankAccount, amount);
             

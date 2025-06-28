@@ -1,3 +1,5 @@
+using TigerBeetle;
+
 namespace RetailBank.Services;
 
 public interface ITransactionService
