@@ -1,6 +1,0 @@
-@RetailBank_HostAddress = http://localhost:5173
-
-GET {{RetailBank_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
