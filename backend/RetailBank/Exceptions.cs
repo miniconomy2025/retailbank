@@ -5,7 +5,7 @@ using TigerBeetle;
 public class TigerBeetleResultException<T> : Exception
 {
     public T? ErrorCode { get; }
-    public TigerBeetleResultException(T errorCode) : base($"{typeof(T).Name} Exception. Error code: {errorCode}") { }
+    public TigerBeetleResultException(T errorCode) : base($"{typeof(T).Name} Exception. Error code: {errorCode}") { ErrorCode = errorCode; }
 }
 
 public class ExternalTransferFailedException : Exception

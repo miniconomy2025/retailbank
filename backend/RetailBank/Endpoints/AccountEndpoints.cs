@@ -29,13 +29,13 @@ public static class AccountEndpoints
 
     public static async Task<IResult> GetAccountBalance(
         ulong id,
-        ITransactionService transactionService,
-        ILogger<TransactionService> logger
+        IAccountService accountService,
+        ILogger<AccountService> logger
     )
     {
         try
         {
-            var account = await transactionService.GetAccount(id);
+            var account = await accountService.GetAccount(id);
 
             if (!account.HasValue)
                 return Results.NotFound();
@@ -58,13 +58,13 @@ public static class AccountEndpoints
 
     public static async Task<IResult> GetAccountTransfers(
         ulong id,
-        ITransactionService transactionService,
-        ILogger<TransactionService> logger
+        IAccountService accountService,
+        ILogger<AccountService> logger
     )
     {
         try
         {
-            var account = await transactionService.GetAccount(id);
+            var account = await accountService.GetAccount(id);
 
             if (!account.HasValue)
                 return Results.NotFound();
@@ -73,7 +73,7 @@ public static class AccountEndpoints
                 ((Int128)account.Value.CreditsPending - (Int128)account.Value.DebitsPending).ToString(),
                 ((Int128)account.Value.CreditsPosted - (Int128)account.Value.DebitsPosted).ToString()
             );
-            
+
             return Results.Ok(balance);
         }
         catch (TigerBeetleResultException<CreateAccountResult> ex)
@@ -84,13 +84,36 @@ public static class AccountEndpoints
     }
 
     public static async Task<IResult> CreateAccount(
-        CreateAccountRequest request, ITransactionService transactionService, ILogger<TransactionService> logger
+        CreateAccountRequest request, IAccountService accountService, ILoanService loanService, ILogger<AccountService> logger
     )
     {
         try
         {
-            var accountId = await transactionService.CreateAccount(request.SalaryCents);
-            return Results.Ok(new CreateAccountResponse(accountId));
+            if (request.AccountType == CreateAccountType.Savings)
+            {
+                if (request?.SalaryCents == null)
+                {
+                    return Results.BadRequest("Missing required property 'salaryCents'");
+                }
+                var accountId = await accountService.CreateSavingAccount((ulong)request.SalaryCents);
+                return Results.Ok(new CreateAccountResponse(accountId));
+            }
+            else if (request.AccountType == CreateAccountType.Loan)
+            {
+                if (request?.LoanAmount == null) {
+                    return Results.BadRequest("Missing required property 'loanAmount'");
+                }
+                if (request?.userAccountNo == null) {
+                    return Results.BadRequest("Missing required property 'userAccountNo'");
+                }
+                var accountId = await loanService.CreateLoanAccount((ulong)request.LoanAmount, (ulong)request.userAccountNo);
+                return Results.Ok(new CreateAccountResponse(accountId));
+            }
+            else
+            {
+                // this should technically never happen but hey
+                return Results.BadRequest();
+            }
         }
         catch (TigerBeetleResultException<CreateAccountResult> ex)
         {
@@ -129,6 +152,15 @@ public static class AccountEndpoints
 
         catch (TigerBeetleResultException<CreateTransferResult> ex)
         {
+            Console.WriteLine("The error code is" + ex.ErrorCode);
+            if (ex.ErrorCode == CreateTransferResult.ExceedsCredits)
+            {
+                return Results.Problem(
+                   statusCode: 409,
+                   title: "Insufficient Funds",
+                   detail: "The account does not have enough funds to complete this transfer.");
+            }
+
             logger.LogError(ex, ex.Message);
             return Results.StatusCode(500);
         }

@@ -1,4 +1,5 @@
 using RetailBank.Endpoints;
+using RetailBank.Repositories;
 using RetailBank.Services;
 using TigerBeetle;
 
@@ -19,6 +20,9 @@ builder.Services.AddSingleton<Client>(serviceProvider =>
 });
 
 builder.Services.AddSingleton<ITransactionService, TransactionService>();
+builder.Services.AddSingleton<IAccountService, AccountService>();
+builder.Services.AddSingleton<ILoanService, LoanService>();
+builder.Services.AddSingleton<ILedgerRepository, TigerBeetleRepository>();
 
 var app = builder.Build();
 
