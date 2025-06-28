@@ -1,4 +1,6 @@
 using RetailBank.Endpoints;
+using RetailBank.Services;
+using TigerBeetle;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +8,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddSingleton<Client>(serviceProvider =>
+{
+    var tbAddress = Environment.GetEnvironmentVariable("TB_ADDRESS") ?? "4000";
+    var clusterID = UInt128.Zero;
+    var addresses = new[] { tbAddress };
+    var client = new Client(clusterID, addresses);
+    return client;
+});
+
+builder.Services.AddSingleton<ITransactionService, TransactionService>();
 
 var app = builder.Build();
 
@@ -22,7 +35,3 @@ app.AddAccountEndpoints();
 
 app.Run();
 
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
