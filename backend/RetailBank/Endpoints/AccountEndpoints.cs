@@ -1,4 +1,5 @@
-﻿using RetailBank.Models.Dtos;
+﻿using Microsoft.AspNetCore.Mvc;
+using RetailBank.Models.Dtos;
 using RetailBank.Services;
 using TigerBeetle;
 
@@ -14,10 +15,14 @@ public static class AccountEndpoints
 
         routes
             .MapGet("/accounts/{id:long}/transfers", GetAccountTransfers)
-            .Produces<GetAccountBalanceResponse>(StatusCodes.Status200OK);
+            .Produces<GetAccountTransfersResponse>(StatusCodes.Status200OK);
 
         routes
-            .MapPost("/accounts", CreateAccount)
+            .MapPost("/accounts/savings", CreateSavingsAccount)
+            .Produces<CreateAccountResponse>(StatusCodes.Status200OK);
+
+        routes
+            .MapPost("/accounts/loan", CreateLoanAccount)
             .Produces<CreateAccountResponse>(StatusCodes.Status200OK);
 
         routes
@@ -41,8 +46,8 @@ public static class AccountEndpoints
                 return Results.NotFound();
 
             var balance = new GetAccountBalanceResponse(
-                ((Int128)account.Value.CreditsPending - (Int128)account.Value.DebitsPending).ToString(),
-                ((Int128)account.Value.CreditsPosted - (Int128)account.Value.DebitsPosted).ToString()
+                (Int128)account.Value.CreditsPending - (Int128)account.Value.DebitsPending,
+                (Int128)account.Value.CreditsPosted - (Int128)account.Value.DebitsPosted
             );
             if (account.HasValue)
                 return Results.Ok(balance);
@@ -59,20 +64,37 @@ public static class AccountEndpoints
     public static async Task<IResult> GetAccountTransfers(
         ulong id,
         IAccountService accountService,
-        ILogger<AccountService> logger
+        ILogger<AccountService> logger,
+        [FromQuery] uint limit = 100,
+        [FromQuery] ulong timeStampMax = 0
     )
     {
         try
         {
-            var account = await accountService.GetAccount(id);
+            var transfers = await accountService.GetAccountTransfers(id, limit, timeStampMax);
+            
+            var transferDtos = transfers.Select(transfer =>
+            {
+                var status = TransferEventTYpe.Transfer;
+                if ((transfer.Flags & TransferFlags.Pending) > 0)
+                    status = TransferEventTYpe.StartTransfer;
+                else if ((transfer.Flags & TransferFlags.PostPendingTransfer) > 0)
+                    status = TransferEventTYpe.CompleteTransfer;
+                else if ((transfer.Flags & TransferFlags.VoidPendingTransfer) > 0)
+                    status = TransferEventTYpe.CancelTransfer;
 
-            if (!account.HasValue)
-                return Results.NotFound();
+                return new TransferEvent(
+                    transfer.Id.ToString("X"),
+                    (ulong)transfer.DebitAccountId,
+                    (ulong)transfer.CreditAccountId,
+                    transfer.Amount,
+                    transfer.PendingId > 0 ? transfer.PendingId.ToString("X") : null,
+                    transfer.Timestamp,
+                    status
+                );
+            });
 
-            var balance = new GetAccountBalanceResponse(
-                ((Int128)account.Value.CreditsPending - (Int128)account.Value.DebitsPending).ToString(),
-                ((Int128)account.Value.CreditsPosted - (Int128)account.Value.DebitsPosted).ToString()
-            );
+            var balance = new GetAccountTransfersResponse(transferDtos);
 
             return Results.Ok(balance);
         }
@@ -83,37 +105,34 @@ public static class AccountEndpoints
         }
     }
 
-    public static async Task<IResult> CreateAccount(
-        CreateAccountRequest request, IAccountService accountService, ILoanService loanService, ILogger<AccountService> logger
+    public static async Task<IResult> CreateSavingsAccount(
+        CreateSavingsAccountRequest request, IAccountService accountService, ILoanService loanService, ILogger<AccountService> logger
     )
     {
         try
         {
-            if (request.AccountType == CreateAccountType.Savings)
+            if (request?.SalaryCents == null)
             {
-                if (request?.SalaryCents == null)
-                {
-                    return Results.BadRequest("Missing required property 'salaryCents'");
-                }
-                var accountId = await accountService.CreateSavingAccount((ulong)request.SalaryCents);
-                return Results.Ok(new CreateAccountResponse(accountId));
+                return Results.BadRequest("Missing required property 'salaryCents'");
             }
-            else if (request.AccountType == CreateAccountType.Loan)
-            {
-                if (request?.LoanAmount == null) {
-                    return Results.BadRequest("Missing required property 'loanAmount'");
-                }
-                if (request?.userAccountNo == null) {
-                    return Results.BadRequest("Missing required property 'userAccountNo'");
-                }
-                var accountId = await loanService.CreateLoanAccount((ulong)request.LoanAmount, (ulong)request.userAccountNo);
-                return Results.Ok(new CreateAccountResponse(accountId));
-            }
-            else
-            {
-                // this should technically never happen but hey
-                return Results.BadRequest();
-            }
+            var accountId = await accountService.CreateSavingAccount((ulong)request.SalaryCents);
+            return Results.Ok(new CreateAccountResponse(accountId));
+        }
+        catch (TigerBeetleResultException<CreateAccountResult> ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return Results.StatusCode(500);
+        }
+    }
+
+    public static async Task<IResult> CreateLoanAccount(
+        CreateLoanAccountRequest request, IAccountService accountService, ILoanService loanService, ILogger<AccountService> logger
+    )
+    {
+        try
+        {
+            var accountId = await loanService.CreateLoanAccount((ulong)request.LoanAmount, (ulong)request.UserAccountNumber);
+            return Results.Ok(new CreateAccountResponse(accountId));
         }
         catch (TigerBeetleResultException<CreateAccountResult> ex)
         {
@@ -130,8 +149,7 @@ public static class AccountEndpoints
     {
         try
         {
-            var amount = UInt128.Parse(request.AmountCents);
-            await transactionService.Transfer(request.From, request.To, amount);
+            await transactionService.Transfer(request.From, request.To, request.AmountCents);
             return Results.Created();
         }
         catch (InvalidAccountException ex)

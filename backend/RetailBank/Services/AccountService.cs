@@ -19,18 +19,21 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
         return await tbClient.LookupAccountAsync(accountId);
     }
 
-    public async Task<Transfer[]> GetAccountTransfers(ulong accountId)
+    public async Task<Transfer[]> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax)
     {
         var filter = new AccountFilter();
         filter.AccountId = accountId;
+        filter.Limit = limit;
+        filter.TimestampMax = timestampMax;
+        filter.Flags = AccountFilterFlags.Reversed | AccountFilterFlags.Debits | AccountFilterFlags.Credits;
+        
         return await tbClient.GetAccountTransfersAsync(filter);
     }
-    
-        // 12 digits starting with "1000"
+
+    // 12 digits starting with "1000"
     private static ulong GenerateSavingsAccountNumber()
     {
         var number = 1000_0000_0000ul + (ulong)RandomNumberGenerator.GetInt32(1_0000_0000);
         return number;
     }
-
 }

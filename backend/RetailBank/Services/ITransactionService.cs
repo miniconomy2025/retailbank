@@ -1,9 +1,6 @@
-using TigerBeetle;
-
 namespace RetailBank.Services;
 
 public interface ITransactionService
 {
-    
     public Task Transfer(ulong fromAccount, ulong toAccount, UInt128 amountCents);
 }
