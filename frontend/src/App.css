@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  margin: 0 auto;
+  width: 100vw;
+  text-align: center;
+  height: 100svh;
+  overflow: hidden;
+}
