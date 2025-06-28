@@ -10,7 +10,7 @@ using TigerBeetle;
 
 public class SimulationRunner(Client tbClient, ILogger<SimulationRunner> logger, ILoanService loanService, ITransactionService transactionService, IAccountService accountService) : BackgroundService
 {
-    private const ushort SIMULATION_PERIOD = 10;
+    private const ushort SIMULATION_PERIOD = 1;
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("SimulationRunner started.");
@@ -37,9 +37,7 @@ public class SimulationRunner(Client tbClient, ILogger<SimulationRunner> logger,
         logger.LogInformation("Calculating interest on loan accounts and updating ledger accordingly.");
 
         var loanAccounts = await accountService.GetAllAccountsByCodeAsync(AccountCode.Loan);
-        Console.WriteLine(JsonSerializer.Serialize(loanAccounts));
         var savingsAccounts = await accountService.GetAllAccountsByCodeAsync(AccountCode.Savings);
-        Console.WriteLine(JsonSerializer.Serialize(savingsAccounts));
         foreach (var account in loanAccounts)
         {
             logger.LogInformation("Computing interest for account: {account number}", account.Id);
@@ -57,16 +55,11 @@ public class SimulationRunner(Client tbClient, ILogger<SimulationRunner> logger,
         }
 
         logger.LogInformation("Paying installments");
-        Console.WriteLine(JsonSerializer.Serialize(loanAccounts));
-        Console.WriteLine(JsonSerializer.Serialize(savingsAccounts));
         foreach (var account in loanAccounts)
         {
             logger.LogInformation("Paying installments for account no: {account number}", account.Id);
+            if(account.DebitsPosted - account.CreditsPosted == 0){ continue; }
             await loanService.PayInstallment(account);
         }
     }
-
-
- 
-
 }

@@ -1,5 +1,6 @@
 namespace RetailBank.Services;
 
+using System.Net;
 using System.Security.Cryptography;
 using RetailBank.Models;
 using RetailBank.Repositories;
@@ -7,7 +8,7 @@ using TigerBeetle;
 
 public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : ILoanService
 {
-    private readonly ushort interestRate = 69;
+    private readonly ushort interestRate = 10;
     public async Task<ulong> CreateLoanAccount(ulong loanAmount, ulong userAccountNo)
     {
         var accountNumber = GenerateLoanAccountNumber();
@@ -34,14 +35,22 @@ public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : 
     public async Task PayInstallment(Account loanAccount)
     {
         var installment = loanAccount.UserData64;
-        await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ulong)loanAccount.Id, installment);
+        var balance = loanAccount.DebitsPosted - loanAccount.CreditsPosted;
+    
+        if (balance < installment)
+        {
+            await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ulong)loanAccount.Id, balance);
+        }
+        else
+        {
+            await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ulong)loanAccount.Id, installment);
+        }
     }
 
     private static uint CalculateInstallment(ulong principal, float annualRatePercent, int months)
     {
         var monthlyRate = annualRatePercent / 100 / 12;
         var denominator = 1 - Math.Pow(1 + (double)monthlyRate, -months);
-        Console.WriteLine(denominator);
         return (uint)Math.Ceiling(principal * monthlyRate / denominator);
     }
 
