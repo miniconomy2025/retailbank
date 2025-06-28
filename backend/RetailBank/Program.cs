@@ -23,6 +23,7 @@ builder.Services.AddSingleton<ITransactionService, TransactionService>();
 builder.Services.AddSingleton<IAccountService, AccountService>();
 builder.Services.AddSingleton<ILoanService, LoanService>();
 builder.Services.AddSingleton<ILedgerRepository, TigerBeetleRepository>();
+builder.Services.AddHostedService<SimulationRunner>();
 
 var app = builder.Build();
 

@@ -1,5 +1,6 @@
 namespace RetailBank.Services;
 
+using System.Net;
 using System.Security.Cryptography;
 using RetailBank.Models;
 using RetailBank.Repositories;
@@ -7,21 +8,18 @@ using TigerBeetle;
 
 public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : ILoanService
 {
-    private readonly ushort interestRate = 69;
+    private readonly ushort interestRate = 10;
     public async Task<ulong> CreateLoanAccount(ulong loanAmount, ulong userAccountNo)
     {
         var accountNumber = GenerateLoanAccountNumber();
-        await ledgerRepository.CreateAccount(accountNumber, userData64: CalculateInstallment(loanAmount, (decimal)(interestRate / 100), 60), code: (ushort)AccountCode.Loan, accountFlags: AccountFlags.CreditsMustNotExceedDebits);
-
+        await ledgerRepository.CreateAccount(accountNumber, userData128:userAccountNo, userData64: CalculateInstallment(loanAmount, interestRate, 60), code: (ushort)AccountCode.Loan, accountFlags: AccountFlags.CreditsMustNotExceedDebits);
         await ledgerRepository.Transfer(ID.Create(), accountNumber, userAccountNo, loanAmount);
         await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.LoanControlAccount, (ushort)BankCode.Retail, loanAmount);
-
         return accountNumber;
     }
 
-    public async Task ComputeInterest(ulong loanAccountNo)
+    public async Task ComputeInterest(Account loanAccount)
     {
-        var loanAccount = await tbClient.LookupAccountAsync(loanAccountNo) ?? throw new AccountNotFoundException(loanAccountNo);
         if (loanAccount.Code != (ushort)AccountCode.Loan)
         {
             throw new InvalidAccountException();
@@ -30,22 +28,30 @@ public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : 
         var balance = loanAccount.DebitsPosted - loanAccount.CreditsPosted;
         var interest = balance / 12 * interestRate / 100;
 
-        await ledgerRepository.Transfer(ID.Create(), (ushort)loanAccountNo, (ushort)LedgerAccountCode.InterestIncomeAccount, interest);
+        await ledgerRepository.Transfer(ID.Create(), (ulong)loanAccount.Id, (ushort)LedgerAccountCode.InterestIncomeAccount, interest);
     }
 
 
-    public async Task PayInstallment(ulong loanAccountNo)
+    public async Task PayInstallment(Account loanAccount)
     {
-        var loanAccount = await tbClient.LookupAccountAsync(loanAccountNo) ?? throw new AccountNotFoundException(loanAccountNo);
         var installment = loanAccount.UserData64;
-
-        await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ushort)loanAccountNo, installment);
+        var balance = loanAccount.DebitsPosted - loanAccount.CreditsPosted;
+    
+        if (balance < installment)
+        {
+            await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ulong)loanAccount.Id, balance);
+        }
+        else
+        {
+            await ledgerRepository.Transfer(ID.Create(), (ushort)AccountCode.Bank, (ulong)loanAccount.Id, installment);
+        }
     }
 
-    private static uint CalculateInstallment(decimal principal, decimal annualRatePercent, int months)
+    private static uint CalculateInstallment(ulong principal, float annualRatePercent, int months)
     {
         var monthlyRate = annualRatePercent / 100 / 12;
-        return (uint)Math.Ceiling(principal * monthlyRate / (1 - (decimal)Math.Pow(1 + (double)monthlyRate, -months)));
+        var denominator = 1 - Math.Pow(1 + (double)monthlyRate, -months);
+        return (uint)Math.Ceiling(principal * monthlyRate / denominator);
     }
 
     // 13 digits starting with "1000"
