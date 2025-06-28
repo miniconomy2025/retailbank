@@ -6,7 +6,7 @@ using RetailBank.Models;
 using RetailBank.Repositories;
 using TigerBeetle;
 
-public class LoanService(Client tbClient, ILedgerRepository ledgerRepository) : ILoanService
+public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
 {
     private readonly ushort interestRate = 10;
     public async Task<ulong> CreateLoanAccount(ulong loanAmount, ulong userAccountNo)

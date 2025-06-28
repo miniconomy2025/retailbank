@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TigerBeetle;
 
-public class SimulationRunner(Client tbClient, ILogger<SimulationRunner> logger, ILoanService loanService, ITransactionService transactionService, IAccountService accountService) : BackgroundService
+public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loanService, ITransactionService transactionService, IAccountService accountService) : BackgroundService
 {
     private const ushort SIMULATION_PERIOD = 1;
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
