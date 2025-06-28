@@ -1,9 +1,10 @@
 using System.Security.Cryptography;
 using RetailBank.Models;
+using RetailBank.Repositories;
 using TigerBeetle;
 namespace RetailBank.Services;
 
-public class TransactionService(Client tbClient) : ITransactionService
+public class TransactionService(Client tbClient, ILedgerRepository ledgerRepository) : ITransactionService
 {
 
     public async Task Transfer(ulong payerAccountId, ulong payeeAccountId, UInt128 amount)
@@ -22,6 +23,12 @@ public class TransactionService(Client tbClient) : ITransactionService
             return;
         }
         await ExternalTransfer(payerBankAccount, payeeAccountId, amount);
+    }
+
+    public async Task PaySalary(Account account)
+    {
+        var salary = account.UserData64;
+        await ledgerRepository.Transfer(ID.Create(), (ushort)BankCode.Retail, (ulong)account.Id, salary);
     }
 
     private async Task ExternalTransfer(Account payerAccount, ulong externalAccountId, UInt128 amount)
