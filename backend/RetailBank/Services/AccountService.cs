@@ -13,10 +13,40 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
         await ledgerRepository.CreateAccount(accountNumber, userData64: salaryCents, code: (ushort)AccountCode.Savings, accountFlags: AccountFlags.DebitsMustNotExceedCredits);
         return accountNumber;
     }
-    
+
     public async Task<Account?> GetAccount(ulong accountId)
     {
         return await tbClient.LookupAccountAsync(accountId);
+    }
+
+    public async Task<List<Account>> GetAllAccountsByCodeAsync(AccountCode code)
+    {
+        var allAccounts = new List<Account>();
+        ulong nextTimestamp = 0;
+        const uint batchSize = 1000;
+
+        while (true)
+        {
+            var filter = new QueryFilter
+            {
+                Limit = batchSize,
+                TimestampMin = nextTimestamp,
+                Code = (ushort)code
+            };
+
+            var accounts = await tbClient.QueryAccountsAsync(filter);
+
+            if (accounts.Length == 0)
+                break;
+
+            allAccounts.AddRange(accounts);
+            nextTimestamp = accounts.Max(a => a.Timestamp) + 1;
+
+            if (accounts.Length < batchSize)
+                break;
+        }
+
+        return allAccounts;
     }
 
     public async Task<Transfer[]> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax)
