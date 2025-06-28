@@ -1,27 +1,31 @@
-using System.Security.Cryptography;
 using RetailBank.Models;
 using RetailBank.Repositories;
 using TigerBeetle;
+
 namespace RetailBank.Services;
 
 public class TransactionService(Client tbClient, ILedgerRepository ledgerRepository) : ITransactionService
 {
-
     public async Task Transfer(ulong payerAccountId, ulong payeeAccountId, UInt128 amount)
     {
         var payerBankAccount = await tbClient.LookupAccountAsync(payerAccountId) ?? throw new AccountNotFoundException(payerAccountId);
-        if (payerBankAccount.Code != (int)AccountCode.Savings)
-        {
+        
+        if (payerBankAccount.Code != (int)LedgerAccountCode.Savings)
             throw new InvalidAccountException();
-        }
+        
         var payeeBankCode = GetBankCode(payeeAccountId);
+        
         if (payeeBankCode == (int)BankCode.Retail)
         {
             var payeeBankAccount = await tbClient.LookupAccountAsync(payeeAccountId) ?? throw new AccountNotFoundException(payeeAccountId);
-            if (payeeBankAccount.Code != (int)AccountCode.Savings) throw new InvalidAccountException();
+            
+            if (payeeBankAccount.Code != (int)LedgerAccountCode.Savings) throw new InvalidAccountException();
+            
             await InternalTransfer(payerBankAccount, payeeBankAccount, amount);
+            
             return;
         }
+        
         await ExternalTransfer(payerBankAccount, payeeAccountId, amount);
     }
 
@@ -61,5 +65,5 @@ public class TransactionService(Client tbClient, ILedgerRepository ledgerReposit
         return true;
     }
 
-    private static ushort GetBankCode(ulong accountNo) => (UInt16)(accountNo / 100000000);
+    private static ushort GetBankCode(ulong accountNumber) => (ushort)(accountNumber / 1_0000_0000);
 }

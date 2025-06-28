@@ -36,8 +36,8 @@ public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loa
         logger.LogInformation("Running simulation step at {Time}", DateTime.UtcNow);
         logger.LogInformation("Calculating interest on loan accounts and updating ledger accordingly.");
 
-        var loanAccounts = await accountService.GetAllAccountsByCodeAsync(AccountCode.Loan);
-        var savingsAccounts = await accountService.GetAllAccountsByCodeAsync(AccountCode.Savings);
+        var loanAccounts = await accountService.GetAllAccountsByCodeAsync(LedgerAccountCode.Loan);
+        var savingsAccounts = await accountService.GetAllAccountsByCodeAsync(LedgerAccountCode.Savings);
         foreach (var account in loanAccounts)
         {
             logger.LogInformation("Computing interest for account: {account number}", account.Id);

@@ -1,11 +1,14 @@
-namespace RetailBank.Models;
+﻿namespace RetailBank.Models;
 
 /// <summary>
-/// The tigerbeetle account numbers for ledger accounts
+/// TigerBeetle account code for types of internal accounts
 /// </summary>
 public enum LedgerAccountCode
 {
-    InterestIncomeAccount = 1001,
-    LoanControlAccount = 1002,
-    OwnersEquityAccount = 1003
+    Bank = 1000,
+    OwnersEquityAccount = 1001,
+    Savings = 2000,
+    Loan = 3000,
+    InterestIncomeAccount = 3001,
+    LoanControlAccount = 3002,
 }

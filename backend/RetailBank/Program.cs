@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http.Json;
 using RetailBank.Endpoints;
 using RetailBank.Repositories;
 using RetailBank.Services;
@@ -10,7 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<Client>(serviceProvider =>
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
+builder.Services.AddSingleton(serviceProvider =>
 {
     var tbAddress = Environment.GetEnvironmentVariable("TB_ADDRESS") ?? "4000";
     var clusterID = UInt128.Zero;
