@@ -29,9 +29,9 @@ public static class AccountEndpoints
             .MapPost("/transfers", CreateTransfer)
             .Produces(StatusCodes.Status201Created);
 
-        routes
-            .MapGet("/transfers", GetTransfers)
-            .Produces<>(StatusCodes.Status201Created);
+        // routes
+        //     .MapGet("/transfers", GetTransfers)
+        //     .Produces<>(StatusCodes.Status201Created);
 
         return routes;
     }

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Security.Cryptography;
 using RetailBank.Models;
 using RetailBank.Repositories;
@@ -5,7 +6,7 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
+public class LoanService(ILedgerRepository ledgerRepository, IAccountService accountService) : ILoanService
 {
     private const ushort InterestRate = 10;
     
@@ -13,7 +14,7 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
     {
         var accountNumber = GenerateLoanAccountNumber();
         await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Loan, userData128:userAccountNo, userData64: CalculateInstallment(loanAmount, InterestRate, 60), accountFlags: AccountFlags.CreditsMustNotExceedDebits);
-        await ledgerRepository.Transfer(ID.Create(), accountNumber, userAccountNo, loanAmount);
+        await ledgerRepository.Transfer(ID.Create(), accountNumber, userAccountNo, loanAmount, transferFlags:TransferFlags.Linked);
         await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountId.LoanControl, (ushort)BankCode.Retail, loanAmount);
         return accountNumber;
     }
@@ -35,16 +36,17 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
     public async Task PayInstallment(Account loanAccount)
     {
         var installment = loanAccount.UserData64;
-        var balance = loanAccount.DebitsPosted - loanAccount.CreditsPosted;
-    
-        if (balance < installment)
+        var loanDebitAccountId = loanAccount.UserData128;
+        var balance = (Int128)loanAccount.DebitsPosted - (Int128)loanAccount.CreditsPosted;
+        var amountDue = Int128.Min(installment, balance);
+        if ((await accountService.GetAccountBalance((ulong)loanDebitAccountId)) < (UInt128)balance)
         {
-            await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.Bank, (ulong)loanAccount.Id, balance);
+            // they have missed their payment their account is struck down by the wrath of god himself
+            await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountId.BadDebts, (ulong)loanAccount.Id, (UInt128)amountDue, transferFlags: TransferFlags.Pending & TransferFlags.ClosingCredit);
+            return;
         }
-        else
-        {
-            await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.Bank, (ulong)loanAccount.Id, installment);
-        }
+        await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.Bank, (ulong)LedgerAccountId.LoanControl, (UInt128)amountDue, transferFlags:TransferFlags.Linked);
+        await ledgerRepository.Transfer(ID.Create(), (ulong)loanDebitAccountId, (ulong)loanAccount.Id, (UInt128)amountDue);
     }
 
     private static uint CalculateInstallment(ulong principal, float annualRatePercent, int months)

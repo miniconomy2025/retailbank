@@ -9,4 +9,5 @@ public enum LedgerAccountId
     OwnersEquity = 1001,
     InterestIncome = 1002,
     LoanControl = 1003,
+    BadDebts = 1004,
 }
