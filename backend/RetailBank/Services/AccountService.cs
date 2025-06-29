@@ -60,6 +60,12 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
         return await tbClient.GetAccountTransfersAsync(filter);
     }
 
+    public async Task<UInt128?> GetAccountBalance(ulong accountId)
+    {
+        var account = await GetAccount(accountId);
+        return account?.CreditsPosted - account?.DebitsPosted;
+    }
+
     // 12 digits starting with "1000"
     private static ulong GenerateSavingsAccountNumber()
     {
