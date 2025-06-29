@@ -6,9 +6,7 @@
 public enum LedgerAccountCode
 {
     Bank = 1000,
-    OwnersEquityAccount = 1001,
-    Savings = 2000,
-    Loan = 3000,
-    InterestIncomeAccount = 3001,
-    LoanControlAccount = 3002,
+    Internal = 2000,
+    Transactional = 3000,
+    Loan = 4000,
 }

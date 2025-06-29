@@ -7,18 +7,18 @@ namespace RetailBank.Services;
 
 public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
 {
-    private readonly ushort interestRate = 10;
+    private const ushort InterestRate = 10;
     
     public async Task<ulong> CreateLoanAccount(ulong loanAmount, ulong userAccountNo)
     {
         var accountNumber = GenerateLoanAccountNumber();
-        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Loan, userData128:userAccountNo, userData64: CalculateInstallment(loanAmount, interestRate, 60), accountFlags: AccountFlags.CreditsMustNotExceedDebits);
+        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Loan, userData128:userAccountNo, userData64: CalculateInstallment(loanAmount, InterestRate, 60), accountFlags: AccountFlags.CreditsMustNotExceedDebits);
         await ledgerRepository.Transfer(ID.Create(), accountNumber, userAccountNo, loanAmount);
-        await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.LoanControlAccount, (ushort)BankCode.Retail, loanAmount);
+        await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountId.LoanControl, (ushort)BankCode.Retail, loanAmount);
         return accountNumber;
     }
 
-    public async Task ComputeInterest(Account loanAccount)
+    public async Task ProcessInterest(Account loanAccount)
     {
         if (loanAccount.Code != (ushort)LedgerAccountCode.Loan)
         {
@@ -26,9 +26,9 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         }
 
         var balance = loanAccount.DebitsPosted - loanAccount.CreditsPosted;
-        var interest = balance / 12 * interestRate / 100;
+        var interest = balance / 12 * InterestRate / 100;
 
-        await ledgerRepository.Transfer(ID.Create(), (ulong)loanAccount.Id, (ushort)LedgerAccountCode.InterestIncomeAccount, interest);
+        await ledgerRepository.Transfer(ID.Create(), (ulong)loanAccount.Id, (ushort)LedgerAccountId.InterestIncome, interest);
     }
 
 

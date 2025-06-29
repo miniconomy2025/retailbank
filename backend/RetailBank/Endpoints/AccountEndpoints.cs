@@ -15,19 +15,23 @@ public static class AccountEndpoints
 
         routes
             .MapGet("/accounts/{id:long}/transfers", GetAccountTransfers)
-            .Produces<GetAccountTransfersResponse>(StatusCodes.Status200OK);
+            .Produces<TransferHistory>(StatusCodes.Status200OK);
 
         routes
-            .MapPost("/accounts/savings", CreateSavingsAccount)
+            .MapPost("/accounts", CreateTransactionalAccount)
             .Produces<CreateAccountResponse>(StatusCodes.Status200OK);
 
         routes
-            .MapPost("/accounts/loan", CreateLoanAccount)
+            .MapPost("/loans", CreateLoanAccount)
             .Produces<CreateAccountResponse>(StatusCodes.Status200OK);
 
         routes
             .MapPost("/transfers", CreateTransfer)
             .Produces(StatusCodes.Status201Created);
+
+        routes
+            .MapGet("/transfers", GetTransfers)
+            .Produces<>(StatusCodes.Status201Created);
 
         return routes;
     }
@@ -75,13 +79,19 @@ public static class AccountEndpoints
             
             var transferDtos = transfers.Select(transfer =>
             {
-                var status = TransferEventTYpe.Transfer;
+                var status = TransferEventType.Transfer;
                 if ((transfer.Flags & TransferFlags.Pending) > 0)
-                    status = TransferEventTYpe.StartTransfer;
+                {
+                    status = TransferEventType.StartTransfer;
+                }
                 else if ((transfer.Flags & TransferFlags.PostPendingTransfer) > 0)
-                    status = TransferEventTYpe.CompleteTransfer;
+                {
+                    status = TransferEventType.CompleteTransfer;
+                }
                 else if ((transfer.Flags & TransferFlags.VoidPendingTransfer) > 0)
-                    status = TransferEventTYpe.CancelTransfer;
+                {
+                    status = TransferEventType.CancelTransfer;
+                }
 
                 return new TransferEvent(
                     transfer.Id.ToString("X"),
@@ -94,7 +104,7 @@ public static class AccountEndpoints
                 );
             });
 
-            var balance = new GetAccountTransfersResponse(transferDtos);
+            var balance = new TransferHistory(transferDtos);
 
             return Results.Ok(balance);
         }
@@ -105,8 +115,8 @@ public static class AccountEndpoints
         }
     }
 
-    public static async Task<IResult> CreateSavingsAccount(
-        CreateSavingsAccountRequest request, IAccountService accountService, ILoanService loanService, ILogger<AccountService> logger
+    public static async Task<IResult> CreateTransactionalAccount(
+        CreateTransactionAccountRequest request, IAccountService accountService, ILoanService loanService, ILogger<AccountService> logger
     )
     {
         try

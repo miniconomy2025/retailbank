@@ -10,7 +10,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
     public async Task<ulong> CreateSavingAccount(ulong salaryCents)
     {
         var accountNumber = GenerateSavingsAccountNumber();
-        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Savings, userData64: salaryCents, accountFlags: AccountFlags.DebitsMustNotExceedCredits);
+        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Transactional, userData64: salaryCents, accountFlags: AccountFlags.DebitsMustNotExceedCredits);
         return accountNumber;
     }
 

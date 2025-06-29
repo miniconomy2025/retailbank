@@ -1,5 +1,5 @@
 ﻿namespace RetailBank.Models.Dtos;
 
-public record GetAccountTransfersResponse(
+public record TransferHistory(
     IEnumerable<TransferEvent> TransferEvents
 );
