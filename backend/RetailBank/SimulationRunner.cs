@@ -1,16 +1,10 @@
-using Microsoft.Extensions.Hosting;
 using RetailBank.Models;
 using RetailBank.Services;
-using System;
-using System.Reflection.Metadata;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using TigerBeetle;
 
 public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loanService, ITransactionService transactionService, IAccountService accountService) : BackgroundService
 {
-    private const ushort SIMULATION_PERIOD = 1;
+    private const ushort SimulationPeriod = 1;
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("SimulationRunner started.");
@@ -20,7 +14,7 @@ public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loa
             try
             {
                 await RunSimulationStepAsync();
-                await Task.Delay(TimeSpan.FromSeconds(SIMULATION_PERIOD), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(SimulationPeriod), stoppingToken);
             }
             catch (Exception ex)
             {
@@ -33,19 +27,19 @@ public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loa
 
     private async Task RunSimulationStepAsync()
     {
-        logger.LogInformation("Running simulation step at {Time}", DateTime.UtcNow);
+        logger.LogInformation($"Running simulation step at {DateTime.UtcNow}");
         logger.LogInformation("Calculating interest on loan accounts and updating ledger accordingly.");
 
         var loanAccounts = await accountService.GetAllAccountsByCodeAsync(LedgerAccountCode.Loan);
-        var savingsAccounts = await accountService.GetAllAccountsByCodeAsync(LedgerAccountCode.Savings);
+        var savingsAccounts = await accountService.GetAllAccountsByCodeAsync(LedgerAccountCode.Transactional);
         foreach (var account in loanAccounts)
         {
             logger.LogInformation("Computing interest for account: {account number}", account.Id);
-            await loanService.ComputeInterest(account);
+            await loanService.ProcessInterest(account);
         }
 
         // wait 15 seconds before continuing
-        await Task.Delay(TimeSpan.FromSeconds(SIMULATION_PERIOD));
+        await Task.Delay(TimeSpan.FromSeconds(SimulationPeriod));
 
         logger.LogInformation("Paying salaries...");
         foreach (var account in savingsAccounts)

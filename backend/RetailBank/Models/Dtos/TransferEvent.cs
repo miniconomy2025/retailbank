@@ -7,5 +7,5 @@ public record TransferEvent(
     UInt128 Amount,
     string? PendingId,
     ulong Timestamp,
-    TransferEventTYpe EventType
+    TransferEventType EventType
 );

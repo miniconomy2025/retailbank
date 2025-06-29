@@ -1,6 +1,6 @@
 ﻿namespace RetailBank.Models.Dtos;
 
-public enum TransferEventTYpe
+public enum TransferEventType
 {
     Transfer,
     StartTransfer,
