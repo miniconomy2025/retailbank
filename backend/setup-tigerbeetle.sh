@@ -14,9 +14,13 @@ ACCOUNT_CODE=1000
 mkdir -p "$TB_DIR"
 cd "$TB_DIR"
 
-echo "Downloading TigerBeetle v$VERSION..."
-curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip -o tigerbeetle.zip
-./tigerbeetle version
+if [ ! -f "$TB_BIN" ]; then
+    echo "Downloading TigerBeetle v$VERSION..."
+    curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip -o tigerbeetle.zip
+    ./tigerbeetle version
+else
+    echo "TigerBeetle already downloaded."
+fi
 
 echo "Formatting file..."
 rm -f ./0_0.tigerbeetle

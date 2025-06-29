@@ -1,9 +1,10 @@
 using RetailBank.Models;
+using RetailBank.Services;
 using TigerBeetle;
 
 namespace RetailBank.Repositories;
 
-public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
+public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) : ILedgerRepository
 {
     public async Task CreateAccount(ulong accountNumber, LedgerAccountCode code, ulong userData64 = 0, UInt128? userData128 = null, uint userData32 = 0, AccountFlags accountFlags = AccountFlags.None)
     {
@@ -18,7 +19,7 @@ public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
             Flags = accountFlags,
         };
 
-        var accountResult = await tbClient.CreateAccountAsync(account);
+        var accountResult = await tbClientProvider.Client.CreateAccountAsync(account);
         if (accountResult != CreateAccountResult.Ok)
         {
             throw new TigerBeetleResultException<CreateAccountResult>(accountResult);
@@ -40,7 +41,7 @@ public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
             Code = code,
         };
 
-        var transferResult = await tbClient.CreateTransferAsync(transfer);
+        var transferResult = await tbClientProvider.Client.CreateTransferAsync(transfer);
         if (transferResult != CreateTransferResult.Ok)
         {
             throw new TigerBeetleResultException<CreateTransferResult>(transferResult);
@@ -49,7 +50,7 @@ public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
 
     public async Task TransferAll(Transfer[] transfers)
     {
-        var transferResults = await tbClient.CreateTransfersAsync(transfers);
+        var transferResults = await tbClientProvider.Client.CreateTransfersAsync(transfers);
         foreach (var result in transferResults)
         {
             if (result.Result != CreateTransferResult.Ok)

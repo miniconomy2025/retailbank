@@ -1,7 +1,8 @@
 using RetailBank.Models;
 using RetailBank.Services;
+namespace RetailBank;
 
-public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loanService, ITransactionService transactionService, IAccountService accountService) : BackgroundService
+public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loanService, ITransactionService transactionService, IAccountService accountService, ISimulationControllerService simulationController) : BackgroundService
 {
     private const ushort SimulationPeriod = 1;
     
@@ -13,8 +14,14 @@ public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loa
         {
             try
             {
-                await RunSimulationStepAsync();
-                await Task.Delay(TimeSpan.FromSeconds(SimulationPeriod), stoppingToken);
+                if (simulationController.IsRunning)
+                {
+                    await RunSimulationStepAsync();
+                    await Task.Delay(TimeSpan.FromSeconds(SimulationPeriod), stoppingToken);
+                    continue;
+                }
+            
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
             catch (Exception ex)
             {

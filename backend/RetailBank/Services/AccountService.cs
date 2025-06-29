@@ -5,7 +5,7 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class AccountService(Client tbClient, ILedgerRepository ledgerRepository) : IAccountService
+public class AccountService(ITigerBeetleClientProvider tbClientProvider, ILedgerRepository ledgerRepository) : IAccountService
 {
     public async Task<ulong> CreateSavingAccount(ulong salaryCents)
     {
@@ -16,7 +16,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
 
     public async Task<Account?> GetAccount(ulong accountId)
     {
-        return await tbClient.LookupAccountAsync(accountId);
+        return await tbClientProvider.Client.LookupAccountAsync(accountId);
     }
 
     public async Task<List<Account>> GetAllAccountsByCodeAsync(LedgerAccountCode code)
@@ -34,7 +34,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
                 Code = (ushort)code
             };
 
-            var accounts = await tbClient.QueryAccountsAsync(filter);
+            var accounts = await tbClientProvider.Client.QueryAccountsAsync(filter);
 
             if (accounts.Length == 0)
                 break;
@@ -57,7 +57,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
         filter.TimestampMax = timestampMax;
         filter.Flags = AccountFilterFlags.Reversed | AccountFilterFlags.Debits | AccountFilterFlags.Credits;
         
-        return await tbClient.GetAccountTransfersAsync(filter);
+        return await tbClientProvider.Client.GetAccountTransfersAsync(filter);
     }
 
     public async Task<UInt128?> GetAccountBalance(ulong accountId)
