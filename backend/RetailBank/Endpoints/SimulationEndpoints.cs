@@ -1,29 +1,45 @@
 using RetailBank.Services;
 using CliWrap;
 using CliWrap.Buffered;
+using RetailBank.Models;
+using RetailBank.Repositories;
 
 namespace RetailBank.Endpoints;
 
 public static class SimulationEndpoints
 {
+    private static readonly ulong InitialBankAccountBalance = 1_000_000_000ul;
     public static IEndpointRouteBuilder AddSimulationEndpoints(this IEndpointRouteBuilder routes)
     {
         routes
-            .MapPost("/simulation/start", StartSimulation)
+            .MapPost("/simulation", StartSimulation)
             .Produces(StatusCodes.Status200OK);
 
         routes
-            .MapGet("/simulation/reset", ResetSimulation)
+            .MapDelete("/simulation", ResetSimulation)
             .Produces(StatusCodes.Status200OK);
 
         return routes;
     }
 
-    public static IResult StartSimulation(
-        ISimulationControllerService simulationController
+    public static async Task<IResult> StartSimulation(
+        ISimulationControllerService simulationController,
+        ILedgerRepository ledgerRepository
     )
     {
+        if (simulationController.IsRunning)
+            return Results.Conflict("The simulation has already begun.");
+
         simulationController.IsRunning = true;
+
+        foreach (var variant in Enum.GetValues<BankId>())
+            await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Bank);
+
+        foreach (var variant in Enum.GetValues<LedgerAccountId>())
+            await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Internal);
+
+        // seed the bank with money
+        await ledgerRepository.Transfer(new LedgerTransfer((ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
         return Results.Ok();
     }
 
@@ -49,15 +65,8 @@ public static class SimulationEndpoints
             tbClientProvider.ResetClient();
         });
 
-        return Results.Ok();
-
-        // create the default bank accounts
-
-
-
-        // seed the bank with money
+        return Results.Accepted();
     }
-
 }
 
 

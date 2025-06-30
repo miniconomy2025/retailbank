@@ -14,10 +14,9 @@ public class AccountService(ILedgerRepository ledgerRepository, ITransferService
         await ledgerRepository.CreateAccount(
             id,
             LedgerAccountCode.Transactional,
+            TigerBeetle.AccountFlags.DebitsMustNotExceedCredits,
             0,
-            salary,
-            0,
-            TigerBeetle.AccountFlags.DebitsMustNotExceedCredits
+            salary
         );
 
         return id;

@@ -15,10 +15,10 @@ public interface ILedgerRepository
     public Task CreateAccount(
         UInt128 accountId,
         LedgerAccountCode code,
-        UInt128 userData128,
-        ulong userData64,
-        uint userData32,
-        AccountFlags flags
+        AccountFlags flags = AccountFlags.None,
+        UInt128 userData128 = default,
+        ulong userData64 = default,
+        uint userData32 = default
     );
 
     public Task<UInt128> Transfer(LedgerTransfer simpleTransfer);

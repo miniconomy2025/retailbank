@@ -17,15 +17,14 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         await ledgerRepository.CreateAccount(
             accountNumber,
             LedgerAccountCode.Loan,
+            AccountFlags.CreditsMustNotExceedDebits,
             debitAccountNumber,
-            CalculateInstallment(loanAmount, InterestRate, 60),
-            0,
-            AccountFlags.CreditsMustNotExceedDebits
+            CalculateInstallment(loanAmount, InterestRate, 60)
         );
 
         await ledgerRepository.TransferLinked([
             new LedgerTransfer(accountNumber, debitAccountNumber, loanAmount),
-            new LedgerTransfer((ulong)LedgerAccountId.LoanControl, (ulong)LedgerAccountId.Bank, loanAmount),
+            new LedgerTransfer((ulong)LedgerAccountId.LoanControl, (ulong)BankId.Retail, loanAmount),
         ]);
 
         return accountNumber;
@@ -74,7 +73,7 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         }
 
         await ledgerRepository.TransferLinked([
-            new LedgerTransfer((ulong)LedgerAccountId.Bank, (ulong)LedgerAccountId.LoanControl, (UInt128)amountDue),
+            new LedgerTransfer((ulong)BankId.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)amountDue),
             new LedgerTransfer(loanDebitAccountId, loanAccount.Id, (UInt128)amountDue),
         ]);
     }

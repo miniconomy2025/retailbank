@@ -35,7 +35,7 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
 
         switch (payeeBankCode)
         {
-            case BankCode.Retail:
+            case BankId.Retail:
                 var payeeAccount = await ledgerRepository.GetAccount(payeeAccountId) ?? throw new AccountNotFoundException(payeeAccountId);
 
                 if (payeeAccount.Code != (ushort)LedgerAccountCode.Transactional)
@@ -43,7 +43,7 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
 
                 await InternalTransfer(payerAccountId, payeeAccountId, amount);
                 break;
-            case BankCode.Commercial:
+            case BankId.Commercial:
                 await ExternalCommercialTransfer(payerAccountId, payeeAccountId, amount);
                 break;
             default:
@@ -60,7 +60,7 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
 
         var salary = account.UserData64;
 
-        await ledgerRepository.Transfer(new LedgerTransfer((ulong)LedgerAccountId.Bank, account.Id, salary));
+        await ledgerRepository.Transfer(new LedgerTransfer((ulong)BankId.Retail, account.Id, salary));
     }
 
     private async Task InternalTransfer(ulong payerAccountId, ulong payeeAccountId, UInt128 amount)
@@ -70,7 +70,7 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
 
     private async Task ExternalCommercialTransfer(ulong payerAccountId, ulong externalAccountId, UInt128 amount)
     {
-        var transfer = new LedgerTransfer(payerAccountId, (ulong)BankCode.Commercial, amount, externalAccountId);
+        var transfer = new LedgerTransfer(payerAccountId, (ulong)BankId.Commercial, amount, externalAccountId);
         var pendingId = await ledgerRepository.StartTransfer(transfer);
 
         if (await TryExternalCommercialTransfer(externalAccountId, amount))
@@ -90,10 +90,10 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
         return true;
     }
 
-    private static BankCode? GetBankCode(UInt128 accountNumber)
+    private static BankId? GetBankCode(UInt128 accountNumber)
     {
         var prefix = (ushort)(accountNumber / (UInt128)Math.Pow(10, Math.Log10((double)accountNumber) - 3));
-        var bankCode = (BankCode)prefix;
+        var bankCode = (BankId)prefix;
 
         if (Enum.IsDefined(bankCode))
             return bankCode;

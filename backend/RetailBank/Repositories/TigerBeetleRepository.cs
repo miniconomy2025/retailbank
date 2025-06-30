@@ -13,10 +13,10 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
     public async Task CreateAccount(
         UInt128 accountId,
         LedgerAccountCode code,
+        AccountFlags flags,
         UInt128 userData128,
         ulong userData64,
-        uint userData32,
-        AccountFlags flags
+        uint userData32
     )
     {
         var result = await tbClientProvider.Client.CreateAccountAsync(new Account
