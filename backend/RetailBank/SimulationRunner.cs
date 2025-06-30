@@ -1,12 +1,21 @@
+using Microsoft.Extensions.Options;
 using RetailBank.Models;
+using RetailBank.Models.Options;
 using RetailBank.Services;
 
-public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loanService, ITransactionService transactionService, IAccountService accountService) : BackgroundService
+public class SimulationRunner(
+    ILogger<SimulationRunner> logger,
+    ILoanService loanService,
+    ITransactionService transactionService,
+    IAccountService accountService,
+    IOptions<SimulationOptions> options
+) : BackgroundService
 {
-    private const ushort SimulationPeriod = 1;
-    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (options.Value.Period == 0)
+            throw new InvalidOperationException("Invalid simulation period '0'.");
+
         logger.LogInformation("SimulationRunner started.");
 
         while (!stoppingToken.IsCancellationRequested)
@@ -14,7 +23,7 @@ public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loa
             try
             {
                 await RunSimulationStepAsync();
-                await Task.Delay(TimeSpan.FromSeconds(SimulationPeriod), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(options.Value.Period), stoppingToken);
             }
             catch (Exception ex)
             {
@@ -39,7 +48,7 @@ public class SimulationRunner(ILogger<SimulationRunner> logger, ILoanService loa
         }
 
         // wait 15 seconds before continuing
-        await Task.Delay(TimeSpan.FromSeconds(SimulationPeriod));
+        await Task.Delay(TimeSpan.FromSeconds(options.Value.Period));
 
         logger.LogInformation("Paying salaries...");
         foreach (var account in savingsAccounts)

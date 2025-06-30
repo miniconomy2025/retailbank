@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using RetailBank.Models;
+using RetailBank.Models.Dtos;
 using RetailBank.Repositories;
 using TigerBeetle;
 
@@ -7,7 +8,7 @@ namespace RetailBank.Services;
 
 public class AccountService(Client tbClient, ILedgerRepository ledgerRepository) : IAccountService
 {
-    public async Task<ulong> CreateSavingAccount(ulong salaryCents)
+    public async Task<ulong> CreateTransactionalAccount(ulong salaryCents)
     {
         var accountNumber = GenerateSavingsAccountNumber();
         await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Transactional, userData64: salaryCents, accountFlags: AccountFlags.DebitsMustNotExceedCredits);
@@ -49,13 +50,13 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
         return allAccounts;
     }
 
-    public async Task<Transfer[]> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax)
+    public async Task<Transfer[]> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax, TransferSide side)
     {
         var filter = new AccountFilter();
         filter.AccountId = accountId;
         filter.Limit = limit;
         filter.TimestampMax = timestampMax;
-        filter.Flags = AccountFilterFlags.Reversed | AccountFilterFlags.Debits | AccountFilterFlags.Credits;
+        filter.Flags = side.ToAccountFilterFlags() | AccountFilterFlags.Reversed;
         
         return await tbClient.GetAccountTransfersAsync(filter);
     }

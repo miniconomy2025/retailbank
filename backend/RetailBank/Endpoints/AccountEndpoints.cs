@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Mvc;
 using RetailBank.Models.Dtos;
 using RetailBank.Services;
 using TigerBeetle;
@@ -10,12 +11,13 @@ public static class AccountEndpoints
     public static IEndpointRouteBuilder AddAccountEndpoints(this IEndpointRouteBuilder routes)
     {
         routes
-            .MapGet("/accounts/{id:long}/balance", GetAccountBalance)
-            .Produces<GetAccountBalanceResponse>(StatusCodes.Status200OK);
+            .MapGet("/accounts/{id:long}", GetAccount)
+            .Produces<AccountDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
         routes
             .MapGet("/accounts/{id:long}/transfers", GetAccountTransfers)
-            .Produces<TransferHistory>(StatusCodes.Status200OK);
+            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK);
 
         routes
             .MapPost("/accounts", CreateTransactionalAccount)
@@ -27,112 +29,73 @@ public static class AccountEndpoints
 
         routes
             .MapPost("/transfers", CreateTransfer)
-            .Produces(StatusCodes.Status201Created);
+            .Produces(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status409Conflict);
 
         routes
             .MapGet("/transfers", GetTransfers)
-            .Produces<>(StatusCodes.Status201Created);
+            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK);
+
+        routes
+            .MapGet("/transfers/{id}", GetTransfer)
+            .Produces<TransferEvent>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
         return routes;
     }
 
-    public static async Task<IResult> GetAccountBalance(
+    public static async Task<IResult> GetAccount(
         ulong id,
         IAccountService accountService,
         ILogger<AccountService> logger
     )
     {
-        try
-        {
-            var account = await accountService.GetAccount(id);
+        var account = await accountService.GetAccount(id);
 
-            if (!account.HasValue)
-                return Results.NotFound();
+        if (!account.HasValue)
+            return Results.NotFound();
 
-            var balance = new GetAccountBalanceResponse(
-                (Int128)account.Value.CreditsPending - (Int128)account.Value.DebitsPending,
-                (Int128)account.Value.CreditsPosted - (Int128)account.Value.DebitsPosted
-            );
-            if (account.HasValue)
-                return Results.Ok(balance);
-            else
-                return Results.NotFound();
-        }
-        catch (TigerBeetleResultException<CreateAccountResult> ex)
-        {
-            logger.LogError(ex, ex.Message);
-            return Results.StatusCode(500);
-        }
+        var balance = new AccountDto(account.Value);
+        
+        return Results.Ok(balance);
     }
 
     public static async Task<IResult> GetAccountTransfers(
         ulong id,
+        HttpContext httpContext,
         IAccountService accountService,
         ILogger<AccountService> logger,
-        [FromQuery] uint limit = 100,
-        [FromQuery] ulong timeStampMax = 0
+        [FromQuery] uint limit = 25,
+        [FromQuery] ulong timestampMax = 0,
+        [FromQuery] TransferSide side = TransferSide.Any
     )
     {
-        try
-        {
-            var transfers = await accountService.GetAccountTransfers(id, limit, timeStampMax);
+        var transfers = await accountService.GetAccountTransfers(id, limit, timestampMax, side);
             
-            var transferDtos = transfers.Select(transfer =>
-            {
-                var status = TransferEventType.Transfer;
-                if ((transfer.Flags & TransferFlags.Pending) > 0)
-                {
-                    status = TransferEventType.StartTransfer;
-                }
-                else if ((transfer.Flags & TransferFlags.PostPendingTransfer) > 0)
-                {
-                    status = TransferEventType.CompleteTransfer;
-                }
-                else if ((transfer.Flags & TransferFlags.VoidPendingTransfer) > 0)
-                {
-                    status = TransferEventType.CancelTransfer;
-                }
+        var transferDtos = transfers.Select(transfer => new TransferEvent(transfer)).ToArray();
 
-                return new TransferEvent(
-                    transfer.Id.ToString("X"),
-                    (ulong)transfer.DebitAccountId,
-                    (ulong)transfer.CreditAccountId,
-                    transfer.Amount,
-                    transfer.PendingId > 0 ? transfer.PendingId.ToString("X") : null,
-                    transfer.Timestamp,
-                    status
-                );
-            });
-
-            var balance = new TransferHistory(transferDtos);
-
-            return Results.Ok(balance);
-        }
-        catch (TigerBeetleResultException<CreateAccountResult> ex)
+        string? nextUri = null;
+        if (transferDtos.Length > 0 && httpContext.Request.Path.HasValue)
         {
-            logger.LogError(ex, ex.Message);
-            return Results.StatusCode(500);
+            var newMax = transferDtos[transferDtos.Length - 1].Timestamp;
+            nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
         }
+
+        var pagination = new CursorPagination<TransferEvent>(transferDtos, nextUri);
+
+        return Results.Ok(pagination);
     }
 
     public static async Task<IResult> CreateTransactionalAccount(
-        CreateTransactionAccountRequest request, IAccountService accountService, ILoanService loanService, ILogger<AccountService> logger
+        CreateTransactionAccountRequest request,
+        IAccountService accountService,
+        ILoanService loanService,
+        ILogger<AccountService> logger
     )
     {
-        try
-        {
-            if (request?.SalaryCents == null)
-            {
-                return Results.BadRequest("Missing required property 'salaryCents'");
-            }
-            var accountId = await accountService.CreateSavingAccount((ulong)request.SalaryCents);
-            return Results.Ok(new CreateAccountResponse(accountId));
-        }
-        catch (TigerBeetleResultException<CreateAccountResult> ex)
-        {
-            logger.LogError(ex, ex.Message);
-            return Results.StatusCode(500);
-        }
+        var accountId = await accountService.CreateTransactionalAccount((ulong)request.SalaryCents);
+        return Results.Ok(new CreateAccountResponse(accountId));
     }
 
     public static async Task<IResult> CreateLoanAccount(
@@ -192,5 +155,46 @@ public static class AccountEndpoints
             logger.LogError(ex, ex.Message);
             return Results.StatusCode(500);
         }
+    }
+
+    public static async Task<IResult> GetTransfers(
+        HttpContext httpContext,
+        ITransactionService transactionService,
+        ILogger<TransactionService> logger,
+        [FromQuery] uint limit = 25,
+        [FromQuery] ulong timestampMax = 0
+    )
+    {
+        var transfers = await transactionService.GetTransfers(limit, timestampMax);
+
+        var transferDtos = transfers.Select(transfer => new TransferEvent(transfer)).ToArray();
+
+        string? nextUri = null;
+        if (transferDtos.Length > 0 && httpContext.Request.Path.HasValue)
+        {
+            var newMax = transferDtos[transferDtos.Length - 1].Timestamp;
+            nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
+        }
+
+        var pagination = new CursorPagination<TransferEvent>(transferDtos, nextUri);
+
+        return Results.Ok(pagination);
+    }
+
+    public static async Task<IResult> GetTransfer(
+        string id,
+        ITransactionService transactionService,
+        ILogger<TransactionService> logger
+    )
+    {
+        var transferId = UInt128.Parse(id, NumberStyles.HexNumber);
+        var transfer = await transactionService.GetTransfer(transferId);
+
+        if (!transfer.HasValue)
+            return Results.NotFound();
+
+        var dto = new TransferEvent(transfer.Value);
+        
+        return Results.Ok(dto);
     }
 }

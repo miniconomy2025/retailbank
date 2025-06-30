@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
 using RetailBank.Endpoints;
+using RetailBank.Models.Options;
 using RetailBank.Repositories;
 using RetailBank.Services;
 using TigerBeetle;
@@ -17,9 +18,16 @@ builder.Services.Configure<JsonOptions>(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+builder.Services.AddOptions<SimulationOptions>()
+    .BindConfiguration(SimulationOptions.Section);
+
 builder.Services.AddSingleton(serviceProvider =>
 {
-    var tbAddress = Environment.GetEnvironmentVariable("TB_ADDRESS") ?? "4000";
+    var tbAddress = builder.Configuration.GetConnectionString("TigerBeetle");
+    
+    if (string.IsNullOrWhiteSpace(tbAddress))
+        throw new ArgumentNullException("TigerBeetle Connection String");
+
     var clusterID = UInt128.Zero;
     var addresses = new[] { tbAddress };
     var client = new Client(clusterID, addresses);

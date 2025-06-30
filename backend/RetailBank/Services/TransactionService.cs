@@ -35,6 +35,21 @@ public class TransactionService(Client tbClient, ILedgerRepository ledgerReposit
         await ledgerRepository.Transfer(ID.Create(), (ushort)BankCode.Retail, (ulong)account.Id, salary);
     }
 
+    public async Task<Transfer[]> GetTransfers(uint limit, ulong timestampMax)
+    {
+        var filter = new QueryFilter();
+        filter.Limit = limit;
+        filter.TimestampMax = timestampMax;
+        filter.Flags = QueryFilterFlags.Reversed;
+
+        return await tbClient.QueryTransfersAsync(filter);
+    }
+
+    public async Task<Transfer?> GetTransfer(UInt128 id)
+    {
+        return await tbClient.LookupTransferAsync(id);
+    }
+
     private async Task ExternalTransfer(Account payerAccount, ulong externalAccountId, UInt128 amount)
     {
         var pendingTransferID = ID.Create();

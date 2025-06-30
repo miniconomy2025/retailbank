@@ -19,10 +19,9 @@ public class TigerBeetleRepository(Client tbClient) : ILedgerRepository
         };
 
         var accountResult = await tbClient.CreateAccountAsync(account);
+        
         if (accountResult != CreateAccountResult.Ok)
-        {
             throw new TigerBeetleResultException<CreateAccountResult>(accountResult);
-        }
     }
 
 
