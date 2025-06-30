@@ -2,13 +2,15 @@ using Microsoft.Extensions.Options;
 using RetailBank.Models;
 using RetailBank.Models.Options;
 using RetailBank.Services;
+namespace RetailBank;
 
 public class SimulationRunner(
     ILogger<SimulationRunner> logger,
     ILoanService loanService,
     ITransactionService transactionService,
     IAccountService accountService,
-    IOptions<SimulationOptions> options
+    IOptions<SimulationOptions> options,
+    ISimulationControllerService simulationController
 ) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -22,8 +24,14 @@ public class SimulationRunner(
         {
             try
             {
-                await RunSimulationStepAsync();
-                await Task.Delay(TimeSpan.FromSeconds(options.Value.Period), stoppingToken);
+                if (simulationController.IsRunning)
+                {
+                    await RunSimulationStepAsync();
+                    await Task.Delay(TimeSpan.FromSeconds(options.Value.Period), stoppingToken);
+                    continue;
+                }
+            
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
             catch (Exception ex)
             {

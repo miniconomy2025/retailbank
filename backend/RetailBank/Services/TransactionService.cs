@@ -4,11 +4,11 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class TransactionService(Client tbClient, ILedgerRepository ledgerRepository) : ITransactionService
+public class TransactionService(ITigerBeetleClientProvider tbClientProvider, ILedgerRepository ledgerRepository) : ITransactionService
 {
     public async Task Transfer(ulong payerAccountId, ulong payeeAccountId, UInt128 amount)
     {
-        var payerBankAccount = await tbClient.LookupAccountAsync(payerAccountId) ?? throw new AccountNotFoundException(payerAccountId);
+        var payerBankAccount = await tbClientProvider.Client.LookupAccountAsync(payerAccountId) ?? throw new AccountNotFoundException(payerAccountId);
         
         if (payerBankAccount.Code != (int)LedgerAccountCode.Transactional)
             throw new InvalidAccountException();
@@ -17,7 +17,7 @@ public class TransactionService(Client tbClient, ILedgerRepository ledgerReposit
         
         if (payeeBankCode == (int)BankCode.Retail)
         {
-            var payeeBankAccount = await tbClient.LookupAccountAsync(payeeAccountId) ?? throw new AccountNotFoundException(payeeAccountId);
+            var payeeBankAccount = await tbClientProvider.Client.LookupAccountAsync(payeeAccountId) ?? throw new AccountNotFoundException(payeeAccountId);
             
             if (payeeBankAccount.Code != (int)LedgerAccountCode.Transactional) throw new InvalidAccountException();
             

@@ -6,7 +6,7 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class AccountService(Client tbClient, ILedgerRepository ledgerRepository) : IAccountService
+public class AccountService(ITigerBeetleClientProvider tbClientProvider, ILedgerRepository ledgerRepository) : IAccountService
 {
     public async Task<ulong> CreateTransactionalAccount(ulong salaryCents)
     {
@@ -17,7 +17,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
 
     public async Task<Account?> GetAccount(ulong accountId)
     {
-        return await tbClient.LookupAccountAsync(accountId);
+        return await tbClientProvider.Client.LookupAccountAsync(accountId);
     }
 
     public async Task<List<Account>> GetAllAccountsByCodeAsync(LedgerAccountCode code)
@@ -35,7 +35,7 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
                 Code = (ushort)code
             };
 
-            var accounts = await tbClient.QueryAccountsAsync(filter);
+            var accounts = await tbClientProvider.Client.QueryAccountsAsync(filter);
 
             if (accounts.Length == 0)
                 break;
@@ -58,7 +58,13 @@ public class AccountService(Client tbClient, ILedgerRepository ledgerRepository)
         filter.TimestampMax = timestampMax;
         filter.Flags = side.ToAccountFilterFlags() | AccountFilterFlags.Reversed;
         
-        return await tbClient.GetAccountTransfersAsync(filter);
+        return await tbClientProvider.Client.GetAccountTransfersAsync(filter);
+    }
+
+    public async Task<UInt128?> GetAccountBalance(ulong accountId)
+    {
+        var account = await GetAccount(accountId);
+        return account?.CreditsPosted - account?.DebitsPosted;
     }
 
     // 12 digits starting with "1000"
