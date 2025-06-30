@@ -5,6 +5,7 @@
 /// </summary>
 public enum LedgerAccountId
 {
+    // must be same as BankCode.Retail
     Bank = 1000,
     OwnersEquity = 1001,
     InterestIncome = 1002,

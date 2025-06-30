@@ -2,7 +2,8 @@
 
 namespace RetailBank.Models.Dtos;
 
-public record AccountDto(
+public record LedgerAccount(
+    UInt128 Id,
     LedgerAccountCode AccountType,
     UInt128 DebitsPending,
     UInt128 DebitsPosted,
@@ -10,11 +11,12 @@ public record AccountDto(
     UInt128 CreditsPosted
 )
 {
-    public Int128 BalancePending => (Int128)CreditsPending - (Int128)DebitsPending;
-    public Int128 BalancePosted => (Int128)CreditsPosted - (Int128)DebitsPosted;
+    public Int128 BalancePending => (Int128)DebitsPending - (Int128)CreditsPending;
+    public Int128 BalancePosted => (Int128)DebitsPosted - (Int128)CreditsPosted;
 
-    public AccountDto(Account account)
+    public LedgerAccount(Account account)
         : this(
+            account.Id,
             (LedgerAccountCode)account.Code,
             account.DebitsPending,
             account.DebitsPosted,

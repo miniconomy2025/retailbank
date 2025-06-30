@@ -1,8 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
-using RetailBank.Models.Dtos;
 using RetailBank.Services;
-using RetailBank;
-using TigerBeetle;
 using CliWrap;
 using CliWrap.Buffered;
 
@@ -23,13 +19,19 @@ public static class SimulationEndpoints
         return routes;
     }
 
-    public static IResult StartSimulation(ISimulationControllerService simulationController)
+    public static IResult StartSimulation(
+        ISimulationControllerService simulationController
+    )
     {
         simulationController.IsRunning = true;
         return Results.Ok();
     }
 
-    public static async Task<IResult> ResetSimulation(ILogger<SimulationRunner> logger, ISimulationControllerService simulationController, ITigerBeetleClientProvider tbClientProvider)
+    public static IResult ResetSimulation(
+        ILogger<SimulationRunner> logger,
+        ISimulationControllerService simulationController,
+        ITigerBeetleClientProvider tbClientProvider
+    )
     {
         simulationController.IsRunning = false;
         // run the script
@@ -47,7 +49,7 @@ public static class SimulationEndpoints
             tbClientProvider.ResetClient();
         });
 
-        return Results.Accepted();
+        return Results.Ok();
 
         // create the default bank accounts
 

@@ -1,6 +1,4 @@
-
 namespace RetailBank.Services;
-
 
 public interface ISimulationControllerService
 {

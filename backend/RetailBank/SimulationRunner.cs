@@ -2,12 +2,13 @@ using Microsoft.Extensions.Options;
 using RetailBank.Models;
 using RetailBank.Models.Options;
 using RetailBank.Services;
+
 namespace RetailBank;
 
 public class SimulationRunner(
     ILogger<SimulationRunner> logger,
     ILoanService loanService,
-    ITransactionService transactionService,
+    ITransferService transferService,
     IAccountService accountService,
     IOptions<SimulationOptions> options,
     ISimulationControllerService simulationController
@@ -47,22 +48,23 @@ public class SimulationRunner(
         logger.LogInformation($"Running simulation step at {DateTime.UtcNow}");
         logger.LogInformation("Calculating interest on loan accounts and updating ledger accordingly.");
 
-        var loanAccounts = await accountService.GetAllAccountsByCodeAsync(LedgerAccountCode.Loan);
-        var savingsAccounts = await accountService.GetAllAccountsByCodeAsync(LedgerAccountCode.Transactional);
+        var loanAccounts = await accountService.GetAccounts(LedgerAccountCode.Loan);
+        var transactionalAccounts = await accountService.GetAccounts(LedgerAccountCode.Transactional);
+        
         foreach (var account in loanAccounts)
         {
             logger.LogInformation("Computing interest for account: {account number}", account.Id);
-            await loanService.ProcessInterest(account);
+            await loanService.ChargeInterest((ulong)account.Id);
         }
 
         // wait 15 seconds before continuing
         await Task.Delay(TimeSpan.FromSeconds(options.Value.Period));
 
         logger.LogInformation("Paying salaries...");
-        foreach (var account in savingsAccounts)
+        foreach (var account in transactionalAccounts)
         {
             logger.LogInformation("Paying salary to: {account number}", account.Id);
-            await transactionService.PaySalary(account);
+            await transferService.PaySalary((ulong)account.Id);
         }
 
         logger.LogInformation("Paying installments");
@@ -70,7 +72,7 @@ public class SimulationRunner(
         {
             logger.LogInformation("Paying installments for account no: {account number}", account.Id);
             if(account.DebitsPosted - account.CreditsPosted == 0){ continue; }
-            await loanService.PayInstallment(account);
+            await loanService.PayInstallment((ulong)account.Id);
         }
     }
 }

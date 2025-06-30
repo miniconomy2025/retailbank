@@ -1,52 +1,82 @@
-using System.Numerics;
 using System.Security.Cryptography;
+using RetailBank.Extensions;
 using RetailBank.Models;
 using RetailBank.Repositories;
 using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class LoanService(ILedgerRepository ledgerRepository, IAccountService accountService) : ILoanService
+public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
 {
     private const ushort InterestRate = 10;
     
-    public async Task<ulong> CreateLoanAccount(ulong loanAmount, ulong userAccountNo)
+    public async Task<ulong> CreateLoanAccount(ulong debitAccountNumber, ulong loanAmount)
     {
         var accountNumber = GenerateLoanAccountNumber();
-        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Loan, userData128:userAccountNo, userData64: CalculateInstallment(loanAmount, InterestRate, 60), accountFlags: AccountFlags.CreditsMustNotExceedDebits);
-        await ledgerRepository.Transfer(ID.Create(), accountNumber, userAccountNo, loanAmount, transferFlags:TransferFlags.Linked);
-        await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountId.LoanControl, (ushort)BankCode.Retail, loanAmount);
+
+        await ledgerRepository.CreateAccount(
+            accountNumber,
+            LedgerAccountCode.Loan,
+            debitAccountNumber,
+            CalculateInstallment(loanAmount, InterestRate, 60),
+            0,
+            AccountFlags.CreditsMustNotExceedDebits
+        );
+
+        await ledgerRepository.TransferLinked([
+            new LedgerTransfer(accountNumber, debitAccountNumber, loanAmount),
+            new LedgerTransfer((ulong)LedgerAccountId.LoanControl, (ulong)LedgerAccountId.Bank, loanAmount),
+        ]);
+
         return accountNumber;
     }
 
-    public async Task ProcessInterest(Account loanAccount)
+    public async Task ChargeInterest(ulong loanAccountId)
     {
-        if (loanAccount.Code != (ushort)LedgerAccountCode.Loan)
-        {
-            throw new InvalidAccountException();
-        }
+        var loanAccount = await ledgerRepository.GetAccount(loanAccountId)
+            ?? throw new AccountNotFoundException(loanAccountId);
 
-        var balance = loanAccount.DebitsPosted - loanAccount.CreditsPosted;
+        if (loanAccount.Code != (ushort)LedgerAccountCode.Loan)
+            throw new InvalidAccountException();
+
+        var balance = loanAccount.BalancePosted();
         var interest = balance / 12 * InterestRate / 100;
 
-        await ledgerRepository.Transfer(ID.Create(), (ulong)loanAccount.Id, (ushort)LedgerAccountId.InterestIncome, interest);
+        await ledgerRepository.Transfer(new LedgerTransfer(
+            loanAccount.Id,
+            (ulong)LedgerAccountId.InterestIncome,
+            (UInt128)interest
+        ));
     }
 
-
-    public async Task PayInstallment(Account loanAccount)
+    public async Task PayInstallment(ulong loanAccountId)
     {
+        var loanAccount = await ledgerRepository.GetAccount(loanAccountId)
+            ?? throw new AccountNotFoundException(loanAccountId);
+        
+        if (loanAccount.Code != (ushort)LedgerAccountCode.Loan)
+            throw new InvalidAccountException();
+        
         var installment = loanAccount.UserData64;
+
         var loanDebitAccountId = loanAccount.UserData128;
-        var balance = (Int128)loanAccount.DebitsPosted - (Int128)loanAccount.CreditsPosted;
-        var amountDue = Int128.Min(installment, balance);
-        if ((await accountService.GetAccountBalance((ulong)loanDebitAccountId)) < balance)
+        var loanDebitAccount = await ledgerRepository.GetAccount(loanDebitAccountId)
+            ?? throw new AccountNotFoundException(loanDebitAccountId);
+
+        var loanBalance = loanAccount.BalancePosted();
+        var amountDue = Int128.Min(installment, loanBalance);
+
+        if (-loanDebitAccount.BalancePosted() < amountDue)
         {
             // they have missed their payment their account is struck down by the wrath of god himself
-            await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountId.BadDebts, (ulong)loanAccount.Id, (UInt128)amountDue, transferFlags: TransferFlags.Pending & TransferFlags.ClosingCredit);
+            await ledgerRepository.BalanceAndCloseCredit((ulong)LedgerAccountId.BadDebts, loanAccount.Id);
             return;
         }
-        await ledgerRepository.Transfer(ID.Create(), (ushort)LedgerAccountCode.Bank, (ulong)LedgerAccountId.LoanControl, (UInt128)amountDue, transferFlags:TransferFlags.Linked);
-        await ledgerRepository.Transfer(ID.Create(), (ulong)loanDebitAccountId, (ulong)loanAccount.Id, (UInt128)amountDue);
+
+        await ledgerRepository.TransferLinked([
+            new LedgerTransfer((ulong)LedgerAccountId.Bank, (ulong)LedgerAccountId.LoanControl, (UInt128)amountDue),
+            new LedgerTransfer(loanDebitAccountId, loanAccount.Id, (UInt128)amountDue),
+        ]);
     }
 
     private static uint CalculateInstallment(ulong principal, float annualRatePercent, int months)
