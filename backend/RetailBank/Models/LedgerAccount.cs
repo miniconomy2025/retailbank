@@ -8,7 +8,9 @@ public record LedgerAccount(
     UInt128 DebitsPending,
     UInt128 DebitsPosted,
     UInt128 CreditsPending,
-    UInt128 CreditsPosted
+    UInt128 CreditsPosted,
+    bool Closed,
+    ulong CreatedAt
 )
 {
     public Int128 BalancePending => (Int128)DebitsPending - (Int128)CreditsPending;
@@ -21,7 +23,9 @@ public record LedgerAccount(
             account.DebitsPending,
             account.DebitsPosted,
             account.CreditsPending,
-            account.CreditsPosted
+            account.CreditsPosted,
+            (account.Flags & AccountFlags.Closed) > 0,
+            account.Timestamp
         )
     { }
 }

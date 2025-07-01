@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using RetailBank.Models;
 using RetailBank.Models.Dtos;
 using RetailBank.Services;
 
@@ -16,6 +17,25 @@ public static class AccountEndpoints
                 Create a transactional account. Transactional 
                 accounts have an account number consisting of 12 
                 digits starting with `1000`.
+                """
+            );
+
+        routes
+            .MapGet("/accounts", GetAccounts)
+            .Produces<IEnumerable<LedgerAccount>>(StatusCodes.Status200OK)
+            .WithDescription(
+                """
+                Lookup all accounts by account type in order of newest to oldest.
+                `next` will contain the URL for the next batch of
+                accounts, or it will be `null` if no accounts were returned.
+                
+                Notable accounts:
+                - Retail Bank Main Account: `1000`
+                - Owners Equity Account: `1001`
+                - Interest Income Account: `1002`
+                - Loan Control Account: `1003`
+                - Bad Debts Account: `1004`
+                - Commercial Bank: `2000`
                 """
             );
 
@@ -60,6 +80,28 @@ public static class AccountEndpoints
         var accountId = await accountService.CreateTransactionalAccount(request.SalaryCents);
 
         return Results.Ok(new CreateAccountResponse(accountId));
+    }
+
+    public static async Task<IResult> GetAccounts(
+        HttpContext httpContext,
+        IAccountService accountService,
+        [FromQuery] LedgerAccountCode? accountType = null,
+        [FromQuery] uint limit = 25,
+        [FromQuery] ulong timestampMax = 0
+    )
+    {
+        var accounts = (await accountService.GetAccounts(accountType, limit, timestampMax)).ToArray();
+
+        string? nextUri = null;
+        if (accounts.Length > 0 && httpContext.Request.Path.HasValue)
+        {
+            var newMax = accounts[accounts.Length - 1].CreatedAt - 1;
+            nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
+        }
+
+        var pagination = new CursorPagination<LedgerAccount>(accounts, nextUri);
+
+        return Results.Ok(pagination);
     }
 
     public static async Task<IResult> GetAccount(
