@@ -1,73 +1,51 @@
 using System.Security.Cryptography;
 using RetailBank.Models;
+using RetailBank.Models.Dtos;
 using RetailBank.Repositories;
-using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class AccountService(ITigerBeetleClientProvider tbClientProvider, ILedgerRepository ledgerRepository) : IAccountService
+public class AccountService(ILedgerRepository ledgerRepository, ITransferService transferService) : IAccountService
 {
-    public async Task<ulong> CreateSavingAccount(ulong salaryCents)
+    public async Task<ulong> CreateTransactionalAccount(ulong salary)
     {
-        var accountNumber = GenerateSavingsAccountNumber();
-        await ledgerRepository.CreateAccount(accountNumber, LedgerAccountCode.Transactional, userData64: salaryCents, accountFlags: AccountFlags.DebitsMustNotExceedCredits);
-        return accountNumber;
+        var id = GenerateTransactionalAccountNumber();
+
+        await ledgerRepository.CreateAccount(
+            id,
+            LedgerAccountCode.Transactional,
+            TigerBeetle.AccountFlags.DebitsMustNotExceedCredits,
+            0,
+            salary
+        );
+
+        return id;
     }
 
-    public async Task<Account?> GetAccount(ulong accountId)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode code)
     {
-        return await tbClientProvider.Client.LookupAccountAsync(accountId);
+        return (await ledgerRepository.GetAccounts(code)).Select(account => new LedgerAccount(account));
     }
 
-    public async Task<List<Account>> GetAllAccountsByCodeAsync(LedgerAccountCode code)
+    public async Task<LedgerAccount?> GetAccount(ulong accountId)
     {
-        var allAccounts = new List<Account>();
-        ulong nextTimestamp = 0;
-        const uint batchSize = 1000;
+        var account = await ledgerRepository.GetAccount(accountId);
 
-        while (true)
-        {
-            var filter = new QueryFilter
-            {
-                Limit = batchSize,
-                TimestampMin = nextTimestamp,
-                Code = (ushort)code
-            };
-
-            var accounts = await tbClientProvider.Client.QueryAccountsAsync(filter);
-
-            if (accounts.Length == 0)
-                break;
-
-            allAccounts.AddRange(accounts);
-            nextTimestamp = accounts.Max(a => a.Timestamp) + 1;
-
-            if (accounts.Length < batchSize)
-                break;
-        }
-
-        return allAccounts;
+        if (account.HasValue)
+            return new LedgerAccount(account.Value);
+        else
+            return null;
     }
 
-    public async Task<Transfer[]> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<TransferEvent>> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax, TransferSide side)
     {
-        var filter = new AccountFilter();
-        filter.AccountId = accountId;
-        filter.Limit = limit;
-        filter.TimestampMax = timestampMax;
-        filter.Flags = AccountFilterFlags.Reversed | AccountFilterFlags.Debits | AccountFilterFlags.Credits;
-        
-        return await tbClientProvider.Client.GetAccountTransfersAsync(filter);
-    }
+        var transfers = await ledgerRepository.GetAccountTransfers(accountId, limit, timestampMax, side);
 
-    public async Task<UInt128?> GetAccountBalance(ulong accountId)
-    {
-        var account = await GetAccount(accountId);
-        return account?.CreditsPosted - account?.DebitsPosted;
+        return await Task.WhenAll(transfers.Select(async transfer => new TransferEvent(transfer, await TransferEvent.MapEventType(transfer, transferService))));
     }
 
     // 12 digits starting with "1000"
-    private static ulong GenerateSavingsAccountNumber()
+    private static ulong GenerateTransactionalAccountNumber()
     {
         var number = 1000_0000_0000ul + (ulong)RandomNumberGenerator.GetInt32(1_0000_0000);
         return number;

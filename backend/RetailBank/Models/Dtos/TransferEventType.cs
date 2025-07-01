@@ -1,4 +1,7 @@
-﻿namespace RetailBank.Models.Dtos;
+﻿using RetailBank.Services;
+using TigerBeetle;
+
+namespace RetailBank.Models.Dtos;
 
 public enum TransferEventType
 {
@@ -6,4 +9,8 @@ public enum TransferEventType
     StartTransfer,
     CompleteTransfer,
     CancelTransfer,
+    ClosingCredit,
+    ClosingDebit,
+    ReopenCredit,
+    ReopenDebit,
 }

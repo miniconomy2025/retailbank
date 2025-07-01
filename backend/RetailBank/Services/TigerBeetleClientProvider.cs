@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using RetailBank.Models.Options;
 using TigerBeetle;
 
 namespace RetailBank.Services;
@@ -5,6 +7,7 @@ namespace RetailBank.Services;
 public class TigerBeetleClientProvider : ITigerBeetleClientProvider
 {
     private Client _client;
+    private string _tbAddress;
 
     public Client Client
     {
@@ -15,18 +18,15 @@ public class TigerBeetleClientProvider : ITigerBeetleClientProvider
         }
     }
 
-    public TigerBeetleClientProvider()
+    public TigerBeetleClientProvider(IOptions<ConnectionStrings> options)
     {
+        _tbAddress = options.Value.TigerBeetle;
         _client = InitialiseClient();
     }
 
     public Client InitialiseClient()
     {
-        var tbAddress = Environment.GetEnvironmentVariable("TB_ADDRESS") ?? "4000";
-        var clusterID = UInt128.Zero;
-        var addresses = new[] { tbAddress };
-        var client = new Client(clusterID, addresses);
-        return client;
+        return new Client(0, [_tbAddress]);
     }
 
     public void ResetClient()

@@ -1,8 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
-using RetailBank.Models.Dtos;
 using RetailBank.Services;
-using RetailBank;
-using TigerBeetle;
 using CliWrap;
 using CliWrap.Buffered;
 using RetailBank.Models;
@@ -12,7 +8,7 @@ namespace RetailBank.Endpoints;
 
 public static class SimulationEndpoints
 {
-    private static readonly ulong InitialBankAccountBalance = 1000_000_000ul;
+    private static readonly ulong InitialBankAccountBalance = 1_000_000_000ul;
     public static IEndpointRouteBuilder AddSimulationEndpoints(this IEndpointRouteBuilder routes)
     {
         routes
@@ -26,26 +22,32 @@ public static class SimulationEndpoints
         return routes;
     }
 
-    public static async Task<IResult> StartSimulation(ISimulationControllerService simulationController, ILedgerRepository ledgerRepository)
+    public static async Task<IResult> StartSimulation(
+        ISimulationControllerService simulationController,
+        ILedgerRepository ledgerRepository
+    )
     {
         if (simulationController.IsRunning)
-        {
             return Results.Conflict("The simulation has already begun.");
-        }
 
         simulationController.IsRunning = true;
-        // create the default bank accounts
-        foreach (var variant in Enum.GetValues<LedgerAccountId>())
-        {
+
+        foreach (var variant in Enum.GetValues<BankId>())
             await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Bank);
-        }
+
+        foreach (var variant in Enum.GetValues<LedgerAccountId>())
+            await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Internal);
 
         // seed the bank with money
-        await ledgerRepository.Transfer(ID.Create(), (ulong)LedgerAccountId.Bank, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance);
+        await ledgerRepository.Transfer(new LedgerTransfer((ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
         return Results.Ok();
     }
 
-    public static IResult ResetSimulation(ILogger<SimulationRunner> logger, ISimulationControllerService simulationController, ITigerBeetleClientProvider tbClientProvider)
+    public static IResult ResetSimulation(
+        ILogger<SimulationRunner> logger,
+        ISimulationControllerService simulationController,
+        ITigerBeetleClientProvider tbClientProvider
+    )
     {
         simulationController.IsRunning = false;
         // run the script

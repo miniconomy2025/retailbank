@@ -1,10 +1,9 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
 using RetailBank.Endpoints;
-using RetailBank.Repositories;
 using RetailBank.Services;
-using TigerBeetle;
 using RetailBank;
+using RetailBank.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,13 +17,10 @@ builder.Services.Configure<JsonOptions>(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-builder.Services.AddSingleton<ITigerBeetleClientProvider, TigerBeetleClientProvider>();
-builder.Services.AddSingleton<ITransactionService, TransactionService>();
-builder.Services.AddSingleton<IAccountService, AccountService>();
-builder.Services.AddSingleton<ILoanService, LoanService>();
-builder.Services.AddSingleton<ILedgerRepository, TigerBeetleRepository>();
-builder.Services.AddSingleton<ISimulationControllerService, SimulationControllerService>();
-builder.Services.AddHostedService<SimulationRunner>();
+builder.Services
+    .AddSingleton<ILedgerRepository, TigerBeetleRepository>()
+    .AddHostedService<SimulationRunner>()
+    .AddServices();
 
 var app = builder.Build();
 
@@ -37,8 +33,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.AddAccountEndpoints();
-app.AddSimulationEndpoints();
+app.AddEndpoints();
 
 app.Run();
 

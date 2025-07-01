@@ -1,13 +1,12 @@
 using RetailBank.Models;
-using TigerBeetle;
+using RetailBank.Models.Dtos;
 
 namespace RetailBank.Services;
 
 public interface IAccountService
 {
-    public Task<Account?> GetAccount(ulong accountId);
-    public Task<UInt128?> GetAccountBalance(ulong accountId);
-    public Task<Transfer[]> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax);
-    public Task<ulong> CreateSavingAccount(ulong salaryCents);
-    public Task<List<Account>> GetAllAccountsByCodeAsync(LedgerAccountCode code);
+    public Task<ulong> CreateTransactionalAccount(ulong salary);
+    public Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode code);
+    public Task<LedgerAccount?> GetAccount(ulong accountId);
+    public Task<IEnumerable<TransferEvent>> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax, TransferSide side);
 }

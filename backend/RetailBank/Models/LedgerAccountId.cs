@@ -5,7 +5,6 @@
 /// </summary>
 public enum LedgerAccountId
 {
-    Bank = 1000,
     OwnersEquity = 1001,
     InterestIncome = 1002,
     LoanControl = 1003,
