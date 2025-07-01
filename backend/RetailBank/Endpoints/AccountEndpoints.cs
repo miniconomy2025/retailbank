@@ -10,16 +10,44 @@ public static class AccountEndpoints
     {
         routes
             .MapPost("/accounts", CreateTransactionalAccount)
-            .Produces<CreateAccountResponse>(StatusCodes.Status200OK);
+            .Produces<CreateAccountResponse>(StatusCodes.Status200OK)
+            .WithDescription(
+                """
+                Create a transactional account. Transactional 
+                accounts have an account number consisting of 12 
+                digits starting with `1000`.
+                """
+            );
 
         routes
             .MapGet("/accounts/{id:long}", GetAccount)
             .Produces<LedgerAccount>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .WithDescription(
+                """
+                Get information about any account.
+                
+                Notable accounts:
+                - Retail Bank Main Account: `1000`
+                - Owners Equity Account: `1001`
+                - Interest Income Account: `1002`
+                - Loan Control Account: `1003`
+                - Bad Debts Account: `1004`
+                - Commercial Bank: `2000`
+                """
+            );
 
         routes
             .MapGet("/accounts/{id:long}/transfers", GetAccountTransfers)
-            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK);
+            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK)
+            .WithDescription(
+                """
+                Get all transfers credited/debited to an account,
+                returns empty array if account does not exist.
+                `next` will contain the URL for the next batch of
+                tranfers, or it will be `null` if no transfers were returned.
+                """
+            );
 
         return routes;
     }

@@ -13,7 +13,8 @@ public static class SimulationEndpoints
     {
         routes
             .MapPost("/simulation", StartSimulation)
-            .Produces(StatusCodes.Status200OK);
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
         routes
             .MapDelete("/simulation", ResetSimulation)
@@ -28,7 +29,11 @@ public static class SimulationEndpoints
     )
     {
         if (simulationController.IsRunning)
-            return Results.Conflict("The simulation has already begun.");
+            return Results.Problem(
+                detail: "The simulation has already begun.",
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request"
+            );
 
         simulationController.IsRunning = true;
 
