@@ -17,9 +17,9 @@ function PageWrapper({ children, loading, error }: PageWrapperProps) {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-red-600">
-        <p>Error: {error.message}</p>
-      </div>
+      <h1 className="h-full w-full flex items-center justify-center text-4xl">
+        Error: {error.message}
+      </h1>
     );
   }
 

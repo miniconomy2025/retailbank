@@ -38,7 +38,7 @@ export default function Accounts() {
   } = useQuery<Account[]>({
     queryKey: ["accounts"],
     queryFn: getAccounts,
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   const filteredAccounts = accounts?.filter((account) => {
@@ -66,6 +66,11 @@ export default function Accounts() {
   );
   const totalCreditsPosted = accounts?.reduce(
     (sum, acc) => sum + acc.creditsPosted,
+    0
+  );
+
+  const totalBalancePosted = accounts?.reduce(
+    (sum, acc) => sum + acc.balancePosted,
     0
   );
 
@@ -118,9 +123,7 @@ export default function Accounts() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {formatCurrency(
-                  (totalDebitsPosted ?? 0) - (totalCreditsPosted ?? 0)
-                )}
+                {formatCurrency(totalBalancePosted)}
               </div>
             </CardContent>
           </Card>
@@ -161,23 +164,22 @@ export default function Accounts() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Account ID</TableHead>
-                    <TableHead>Account Type</TableHead>
-                    <TableHead className="text-right">Debits Pending</TableHead>
-                    <TableHead className="text-right">Debits Posted</TableHead>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Debit Pending</TableHead>
+                    <TableHead className="text-right">Debit Posted</TableHead>
+                    <TableHead className="text-right">Credit Pending</TableHead>
+                    <TableHead className="text-right">Credit Posted</TableHead>
                     <TableHead className="text-right">
-                      Credits Pending
+                      Balance Pending
                     </TableHead>
-                    <TableHead className="text-right">Credits Posted</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="text-right">Balance Posted</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                     <TableHead className="text-center"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAccounts?.map((account) => {
-                    const balance =
-                      account.debitsPosted - account.creditsPosted;
                     return (
                       <TableRow key={account.id}>
                         <TableCell className="text-left">
@@ -198,16 +200,11 @@ export default function Accounts() {
                         <TableCell className="text-right">
                           {formatCurrency(account.creditsPosted)}
                         </TableCell>
-                        <TableCell
-                          className={`text-right ${
-                            balance > 0
-                              ? "text-green-600"
-                              : balance < 0
-                              ? "text-red-600"
-                              : "text-gray-600"
-                          }`}
-                        >
-                          {formatCurrency(balance)}
+                        <TableCell className="text-right">
+                          {formatCurrency(account.balancePending)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(account.balancePosted)}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge

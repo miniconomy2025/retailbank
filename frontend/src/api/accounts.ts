@@ -3,7 +3,7 @@ import type { Transfer } from "@/models/transfers";
 import { apiFetch } from "@/utils/api";
 
 export async function getAccounts(): Promise<Account[]> {
-  const response = await apiFetch({ path: "/accountss", method: "GET" });
+  const response = await apiFetch({ path: "/accounts", method: "GET" });
   if (!response.ok) {
     throw new Error(`${response.status}`);
   }
