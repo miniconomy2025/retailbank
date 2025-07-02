@@ -84,7 +84,7 @@ export default function Accounts() {
               <CardTitle className="font-medium">Total Accounts</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalAccounts}</div>
+              <div className="text-xl font-bold">{totalAccounts}</div>
               <p className="text-s">
                 {activeAccounts} active, {closedAccounts} closed
               </p>
@@ -95,7 +95,7 @@ export default function Accounts() {
               <CardTitle className="font-medium">Total Debits Posted</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-xl font-bold">
                 {formatCurrency(totalDebitsPosted)}
               </div>
             </CardContent>
@@ -107,7 +107,7 @@ export default function Accounts() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-xl font-bold">
                 {formatCurrency(totalCreditsPosted)}
               </div>
             </CardContent>
@@ -117,7 +117,7 @@ export default function Accounts() {
               <CardTitle className="font-medium">Net Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-xl font-bold">
                 {formatCurrency(
                   (totalDebitsPosted ?? 0) - (totalCreditsPosted ?? 0)
                 )}
