@@ -1,3 +1,10 @@
 export function formatCurrency(value: number | undefined) {
-    return `Đ ${value ?? 0}`
+  const val = value ?? 0;
+
+  return (
+    "Đ " +
+    val
+      .toFixed(2)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+  );
 }

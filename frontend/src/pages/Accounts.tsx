@@ -71,32 +71,28 @@ export default function Accounts() {
 
   return (
     <PageWrapper loading={isLoading} error={error}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4">
+        <div className="flex ">
           <div>
-            <h1 className="text-3xl font-bold  text-left">Accounts</h1>
+            <h1 className="text-3xl font-bold text-left">Accounts</h1>
             <p>Monitor your ledger accounts</p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Accounts
-              </CardTitle>
+            <CardHeader className="flex">
+              <CardTitle className="font-medium">Total Accounts</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalAccounts}</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-s">
                 {activeAccounts} active, {closedAccounts} closed
               </p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Debits Posted
-              </CardTitle>
+            <CardHeader className="flex">
+              <CardTitle className="font-medium">Total Debits Posted</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -105,8 +101,8 @@ export default function Accounts() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+            <CardHeader className="flex">
+              <CardTitle className="font-medium">
                 Total Credits Posted
               </CardTitle>
             </CardHeader>
@@ -117,8 +113,8 @@ export default function Accounts() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
+            <CardHeader className="flex">
+              <CardTitle className="font-medium">Net Balance</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -130,10 +126,10 @@ export default function Accounts() {
           </Card>
         </div>
         <Card>
-          <CardContent>
-            <div className="flex items-center space-x-2 mb-4">
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4" />
                 <Input
                   placeholder="Search accounts by ID or type..."
                   value={searchTerm}
@@ -143,7 +139,7 @@ export default function Accounts() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40 cursor-pointer">
-                  <Filter className="mr-2 h-4 w-4" />
+                  <Filter />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -175,7 +171,7 @@ export default function Accounts() {
                     <TableHead className="text-right">Credits Posted</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="text-center"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -184,26 +180,26 @@ export default function Accounts() {
                       account.debitsPosted - account.creditsPosted;
                     return (
                       <TableRow key={account.id}>
-                        <TableCell className="font-mono text-sm text-left">
+                        <TableCell className="text-left">
                           {account.id}
                         </TableCell>
                         <TableCell className="text-left">
                           <Badge variant="outline">{account.accountType}</Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono">
+                        <TableCell className="text-right">
                           {formatCurrency(account.debitsPending)}
                         </TableCell>
-                        <TableCell className="text-right font-mono">
+                        <TableCell className="text-right">
                           {formatCurrency(account.debitsPosted)}
                         </TableCell>
-                        <TableCell className="text-right font-mono">
+                        <TableCell className="text-right">
                           {formatCurrency(account.creditsPending)}
                         </TableCell>
-                        <TableCell className="text-right font-mono">
+                        <TableCell className="text-right">
                           {formatCurrency(account.creditsPosted)}
                         </TableCell>
                         <TableCell
-                          className={`text-right font-mono font-semibold ${
+                          className={`text-right ${
                             balance > 0
                               ? "text-green-600"
                               : balance < 0
@@ -220,8 +216,11 @@ export default function Accounts() {
                             {account.closed ? "Closed" : "Active"}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Eye className="h-6 w-6 cursor-pointer" onClick={() => navigate(`/accounts/${account.id}`)} />
+                        <TableCell className="text-center">
+                          <Eye
+                            className="h-6 w-6 cursor-pointer"
+                            onClick={() => navigate(`/accounts/${account.id}`)}
+                          />
                         </TableCell>
                       </TableRow>
                     );
@@ -231,7 +230,7 @@ export default function Accounts() {
             </div>
 
             {filteredAccounts?.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 ">
                 No accounts found matching your criteria.
               </div>
             )}
