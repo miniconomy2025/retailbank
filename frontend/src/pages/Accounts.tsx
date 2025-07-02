@@ -41,7 +41,7 @@ export default function Accounts() {
     refetchInterval: 15000,
   });
 
-  const filteredAccounts = accounts?.filter((account) => {
+  const filteredAccounts = (accounts ?? [])?.filter((account) => {
     const matchesSearch =
       account.id.toString().includes(searchTerm.toLowerCase()) ||
       account.accountType
@@ -158,8 +158,6 @@ export default function Accounts() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Accounts Table */}
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
