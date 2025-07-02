@@ -28,9 +28,6 @@ builder.Services
     .AddHostedService<SimulationRunner>()
     .AddServices();
 
-    builder.Services.AddCors(options =>
-{
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
