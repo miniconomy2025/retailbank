@@ -23,10 +23,13 @@ import { type Account } from "@/models/accounts";
 import { useQuery } from "@tanstack/react-query";
 import { getAccounts } from "@/api/accounts";
 import PageWrapper from "@/components/PageWrapper";
+import { formatCurrency } from "@/utils/formatter";
+import { useNavigate } from "react-router-dom";
 
 export default function Accounts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const navigate = useNavigate();
 
   const {
     data: accounts,
@@ -97,7 +100,7 @@ export default function Accounts() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {totalDebitsPosted?.toString()}
+                {formatCurrency(totalDebitsPosted)}
               </div>
             </CardContent>
           </Card>
@@ -109,7 +112,7 @@ export default function Accounts() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {totalCreditsPosted?.toString()}
+                {formatCurrency(totalCreditsPosted)}
               </div>
             </CardContent>
           </Card>
@@ -119,9 +122,9 @@ export default function Accounts() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {(
+                {formatCurrency(
                   (totalDebitsPosted ?? 0) - (totalCreditsPosted ?? 0)
-                ).toString()}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -188,16 +191,16 @@ export default function Accounts() {
                           <Badge variant="outline">{account.accountType}</Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {account.debitsPending}
+                          {formatCurrency(account.debitsPending)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {account.debitsPosted}
+                          {formatCurrency(account.debitsPosted)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {account.creditsPending}
+                          {formatCurrency(account.creditsPending)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {account.creditsPosted}
+                          {formatCurrency(account.creditsPosted)}
                         </TableCell>
                         <TableCell
                           className={`text-right font-mono font-semibold ${
@@ -208,7 +211,7 @@ export default function Accounts() {
                               : "text-gray-600"
                           }`}
                         >
-                          {balance.toString()}
+                          {formatCurrency(balance)}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge
@@ -218,7 +221,7 @@ export default function Accounts() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className="h-6 w-6 cursor-pointer" onClick={() => navigate(`/accounts/${account.id}`)} />
                         </TableCell>
                       </TableRow>
                     );

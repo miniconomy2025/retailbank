@@ -16,7 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Overview />} />
           <Route path="/accounts" element={<Accounts />} />
-          <Route path="/account/:accountId" element={<Account />} />
+          <Route path="/accounts/:accountId" element={<Account />} />
           <Route path="/transfers" element={<Transfers />} />
           <Route path="/transfers/:transferId" element={<Transfer />} />
           <Route path="*" element={<NotFound />} />
