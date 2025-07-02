@@ -8,13 +8,13 @@ export interface Transfer {
   eventType: TransferEventType;
 }
 
-enum TransferEventType {
-  Transfer = "Transfer",
-  StartTransfer = "StartTransfer",
-  CompleteTransfer = "CompleteTransfer",
-  CancelTransfer = "CancelTransfer",
-  ClosingCredit = "ClosingCredit",
-  ClosingDebit = "ClosingDebit",
-  ReopenCredit = "ReopenCredit",
-  ReopenDebit = "ReopenDebit",
+export enum TransferEventType {
+  TRANSFER = "Transfer",
+  START_TRANSFER = "StartTransfer",
+  COMPLETE_TRANSFER = "CompleteTransfer",
+  CANCEL_TRANSFER = "CancelTransfer",
+  CLOSING_CREDIT = "ClosingCredit",
+  CLOSING_DEBIT = "ClosingDebit",
+  REOPEN_CREDIT = "ReopenCredit",
+  REOPEN_DEBIT = "ReopenDebit",
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Eye, ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import { Search, ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,20 +16,19 @@ import { useQuery } from "@tanstack/react-query";
 import { getAccount, getAccountTransfers } from "@/api/accounts";
 import PageWrapper from "@/components/PageWrapper";
 import { formatCurrency } from "@/utils/formatter";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import type { Transfer } from "@/models/transfers";
 
 export default function Account() {
   const { accountId } = useParams();
   const [searchTerm, setSearchTerm] = useState("");
-  const navigate = useNavigate();
 
   const {
     data: account,
     isLoading: isAccountLoading,
     error: accountError,
   } = useQuery<Account>({
-    queryKey: ["account"],
+    queryKey: [`account-${accountId}`],
     queryFn: () => getAccount(Number(accountId ?? 0)),
     refetchInterval: 15000,
   });
@@ -39,7 +38,7 @@ export default function Account() {
     isLoading: isTransferLoading,
     error: transferError,
   } = useQuery<Transfer[]>({
-    queryKey: ["transfers"],
+    queryKey: [`account-transfers-${accountId}`],
     queryFn: () => getAccountTransfers(Number(accountId ?? 0)),
     refetchInterval: 15000,
   });
@@ -120,7 +119,7 @@ export default function Account() {
         </div>
         <Card>
           <CardContent className="flex flex-col gap-4">
-            <CardTitle className="text-left">Account Transfers</CardTitle>
+            <CardTitle className="text-left">Accounts Transfers</CardTitle>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4" />
@@ -142,7 +141,6 @@ export default function Account() {
                     <TableHead>To Account</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-center"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -155,12 +153,12 @@ export default function Account() {
                         <div className="flex items-center gap-1">
                           {isDebit(transfer) ? (
                             <>
-                              <ArrowUpIcon className="h-4 w-4 text-red-500" />
+                              <ArrowDownIcon className="h-4 w-4 text-red-500" />
                               <span className="text-red-600">Debit</span>
                             </>
                           ) : (
                             <>
-                              <ArrowDownIcon className="h-4 w-4 text-green-500" />
+                              <ArrowUpIcon className="h-4 w-4 text-green-500" />
                               <span className="text-green-600">Credit</span>
                             </>
                           )}
@@ -177,14 +175,6 @@ export default function Account() {
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge>{transfer.eventType}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Eye
-                          className="h-6 w-6 cursor-pointer"
-                          onClick={() =>
-                            navigate(`/transfers/${transfer.transactionId}`)
-                          }
-                        />
                       </TableCell>
                     </TableRow>
                   ))}
