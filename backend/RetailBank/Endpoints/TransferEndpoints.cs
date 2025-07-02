@@ -13,17 +13,34 @@ public static class TransferEndpoints
         routes
             .MapPost("/transfers", CreateTransfer)
             .Produces(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status409Conflict);
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .WithDescription(
+                """
+                Transfer money between accounts. Debiting account
+                `from` and crediting account `to`. This can be used 
+                for transfers between retail bank accounts, and 
+                for transfers to the commercial bank. Retail bank 
+                account numbers start with `1000`, while commercial 
+                bank account numbers start with `2000`.
+                """
+            );
 
         routes
             .MapGet("/transfers", GetTransfers)
-            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK);
+            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK)
+            .WithDescription(
+                """
+                Get all transfers. `next` will contain the URL for
+                the next batch of tranfers, or it will be `null` if
+                no transfers were returned.
+                """
+            );
 
         routes
             .MapGet("/transfers/{id}", GetTransfer)
             .Produces<TransferEvent>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         return routes;
     }
@@ -50,9 +67,10 @@ public static class TransferEndpoints
         catch (ExternalTransferFailedException ex)
         {
             return Results.Problem(
-            detail: $"Downstream service is unavailable. {ex.Message}",
-            statusCode: 503,
-            title: "Service Unavailable");
+                detail: $"Downstream service is unavailable. {ex.Message}",
+                statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Service Unavailable"
+            );
         }
 
         catch (TigerBeetleResultException<CreateTransferResult> ex)
@@ -61,9 +79,10 @@ public static class TransferEndpoints
             if (ex.ErrorCode == CreateTransferResult.ExceedsCredits)
             {
                 return Results.Problem(
-                   statusCode: 409,
-                   title: "Insufficient Funds",
-                   detail: "The account does not have enough funds to complete this transfer.");
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: "Insufficient Funds",
+                    detail: "The account does not have enough funds to complete this transfer."
+                );
             }
 
             logger.LogError(ex, ex.Message);

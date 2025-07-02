@@ -1,7 +1,10 @@
+using System;
 using Microsoft.Extensions.Options;
 using RetailBank.Models;
+using RetailBank.Models.Dtos;
 using RetailBank.Models.Options;
 using RetailBank.Services;
+using TigerBeetle;
 
 namespace RetailBank;
 
@@ -19,7 +22,7 @@ public class SimulationRunner(
         if (options.Value.Period == 0)
             throw new InvalidOperationException("Invalid simulation period '0'.");
 
-        logger.LogInformation("SimulationRunner started.");
+        logger.LogInformation("Starting simulation");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -40,39 +43,76 @@ public class SimulationRunner(
             }
         }
 
-        logger.LogInformation("SimulationRunner stopping.");
+        logger.LogInformation("Stopping simulation");
     }
 
     private async Task RunSimulationStepAsync()
     {
         logger.LogInformation($"Running simulation step at {DateTime.UtcNow}");
-        logger.LogInformation("Calculating interest on loan accounts and updating ledger accordingly.");
 
-        var loanAccounts = await accountService.GetAccounts(LedgerAccountCode.Loan);
-        var transactionalAccounts = await accountService.GetAccounts(LedgerAccountCode.Transactional);
-        
-        foreach (var account in loanAccounts)
+        const int BatchSize = 4096;
+
+        // Pay Salaries
+
+        var transactionalAccounts = await accountService.GetAccounts(LedgerAccountCode.Transactional, BatchSize, 0);
+
+        while (transactionalAccounts.Count() > 0)
         {
-            logger.LogInformation("Computing interest for account: {account number}", account.Id);
-            await loanService.ChargeInterest((ulong)account.Id);
+            foreach (var account in transactionalAccounts)
+            {
+                if (account.Closed)
+                    continue;
+
+                logger.LogTrace($"Paying salary to {account.Id}");
+
+                try
+                {
+                    await transferService.PaySalary((ulong)account.Id);
+                }
+                catch (TigerBeetleResultException<CreateTransferResult> exception)
+                {
+                    logger.LogError($"Failed to pay salary to {account.Id}: {exception.Message}");
+                }
+            }
+            
+            transactionalAccounts = await accountService.GetAccounts(LedgerAccountCode.Transactional, BatchSize, transactionalAccounts.Last().CreatedAt - 1);
         }
 
-        // wait 15 seconds before continuing
-        await Task.Delay(TimeSpan.FromSeconds(options.Value.Period));
+        // Charge Interest & Pay Installments
 
-        logger.LogInformation("Paying salaries...");
-        foreach (var account in transactionalAccounts)
-        {
-            logger.LogInformation("Paying salary to: {account number}", account.Id);
-            await transferService.PaySalary((ulong)account.Id);
-        }
+        var loanAccounts = await accountService.GetAccounts(LedgerAccountCode.Loan, BatchSize, 0);
 
-        logger.LogInformation("Paying installments");
-        foreach (var account in loanAccounts)
+        while (loanAccounts.Count() > 0)
         {
-            logger.LogInformation("Paying installments for account no: {account number}", account.Id);
-            if(account.DebitsPosted - account.CreditsPosted == 0){ continue; }
-            await loanService.PayInstallment((ulong)account.Id);
+            foreach (var account in loanAccounts)
+            {
+                if (account.Closed)
+                    continue;
+
+                logger.LogTrace($"Charging interest for {account.Id}");
+
+                try
+                {
+                    await loanService.ChargeInterest((ulong)account.Id);
+                }
+                catch (TigerBeetleResultException<CreateTransferResult> exception)
+                {
+                    logger.LogError($"Failed to charge interest for {account.Id}: {exception.Message}");
+                }
+
+                logger.LogTrace($"Paying installments for {account.Id}");
+
+                try
+                {
+                    await loanService.PayInstallment((ulong)account.Id);
+                }
+                catch (TigerBeetleResultException<CreateTransferResult> exception)
+                {
+                    logger.LogError($"Paying installments for {account.Id}: {exception.Message}");
+                }
+            }
+
+            loanAccounts = await accountService.GetAccounts(LedgerAccountCode.Loan, BatchSize, loanAccounts.Last().CreatedAt - 1);
         }
     }
 }

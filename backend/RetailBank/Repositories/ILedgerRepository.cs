@@ -6,9 +6,9 @@ namespace RetailBank.Repositories;
 
 public interface ILedgerRepository
 {
+    public Task<Account[]> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax);
     public Task<Account?> GetAccount(UInt128 id);
     public Task<Transfer[]> GetAccountTransfers(UInt128 id, uint limit, ulong timestampMax, TransferSide side);
-    public Task<IEnumerable<Account>> GetAccounts(LedgerAccountCode code);
     public Task<Transfer?> GetTransfer(UInt128 id);
     public Task<Transfer[]> GetTransfers(uint limit, ulong timestampMax);
 

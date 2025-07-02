@@ -22,9 +22,9 @@ public class AccountService(ILedgerRepository ledgerRepository, ITransferService
         return id;
     }
 
-    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode code)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax)
     {
-        return (await ledgerRepository.GetAccounts(code)).Select(account => new LedgerAccount(account));
+        return (await ledgerRepository.GetAccounts(code, limit, timestampMax)).Select(account => new LedgerAccount(account));
     }
 
     public async Task<LedgerAccount?> GetAccount(ulong accountId)

@@ -34,6 +34,19 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
             throw new TigerBeetleResultException<CreateAccountResult>(result);
     }
 
+    public async Task<Account[]> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax)
+    {
+        var filter = new QueryFilter();
+        filter.Limit = limit;
+        filter.TimestampMax = filter.TimestampMax;
+        filter.Flags = QueryFilterFlags.Reversed;
+
+        if (code.HasValue)
+            filter.Code = (ushort)code.Value;
+
+        return await tbClientProvider.Client.QueryAccountsAsync(filter);
+    }
+
     public async Task<Account?> GetAccount(UInt128 accountId)
     {
         return await tbClientProvider.Client.LookupAccountAsync(accountId);
@@ -48,36 +61,6 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         filter.Flags = side.ToAccountFilterFlags() | AccountFilterFlags.Reversed;
 
         return await tbClientProvider.Client.GetAccountTransfersAsync(filter);
-    }
-
-    public async Task<IEnumerable<Account>> GetAccounts(LedgerAccountCode code)
-    {
-        var allAccounts = new List<Account>();
-        ulong nextTimestamp = 0;
-        const uint batchSize = 1000;
-
-        while (true)
-        {
-            var filter = new QueryFilter
-            {
-                Limit = batchSize,
-                TimestampMin = nextTimestamp,
-                Code = (ushort)code
-            };
-
-            var accounts = await tbClientProvider.Client.QueryAccountsAsync(filter);
-
-            if (accounts.Length == 0)
-                break;
-
-            allAccounts.AddRange(accounts);
-            nextTimestamp = accounts.Max(a => a.Timestamp) + 1;
-
-            if (accounts.Length < batchSize)
-                break;
-        }
-
-        return allAccounts;
     }
 
     public async Task<Transfer[]> GetTransfers(uint limit, ulong timestampMax)

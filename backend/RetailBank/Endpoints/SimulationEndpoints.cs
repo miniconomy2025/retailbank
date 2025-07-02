@@ -3,6 +3,8 @@ using CliWrap;
 using CliWrap.Buffered;
 using RetailBank.Models;
 using RetailBank.Repositories;
+using TigerBeetle;
+using RetailBank.Extensions;
 
 namespace RetailBank.Endpoints;
 
@@ -13,7 +15,8 @@ public static class SimulationEndpoints
     {
         routes
             .MapPost("/simulation", StartSimulation)
-            .Produces(StatusCodes.Status200OK);
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
         routes
             .MapDelete("/simulation", ResetSimulation)
@@ -28,19 +31,41 @@ public static class SimulationEndpoints
     )
     {
         if (simulationController.IsRunning)
-            return Results.Conflict("The simulation has already begun.");
+            return Results.Problem(
+                detail: "The simulation has already begun.",
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request"
+            );
 
         simulationController.IsRunning = true;
 
         foreach (var variant in Enum.GetValues<BankId>())
-            await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Bank);
+        {
+            try
+            {
+                await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Bank);
+            }
+            catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
+        }
 
         foreach (var variant in Enum.GetValues<LedgerAccountId>())
-            await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Internal);
+        {
+            try
+            {
+                await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Internal);
+            }
+            catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
+        }
 
-        // seed the bank with money
-        await ledgerRepository.Transfer(new LedgerTransfer((ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
-        return Results.Ok();
+        var mainAccount = (await ledgerRepository.GetAccount((ulong)BankId.Retail).ConfigureAwait(false)).Value;
+
+        if (mainAccount.BalancePosted() == 0)
+        {
+            // seed initial funds
+            await ledgerRepository.Transfer(new LedgerTransfer((ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
+        }
+
+        return Results.NoContent();
     }
 
     public static IResult ResetSimulation(

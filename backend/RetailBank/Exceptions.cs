@@ -1,7 +1,10 @@
 public class TigerBeetleResultException<T> : Exception
 {
     public T? ErrorCode { get; }
-    public TigerBeetleResultException(T errorCode) : base($"{typeof(T).Name} Exception. Error code: {errorCode}") { ErrorCode = errorCode; }
+    public TigerBeetleResultException(T errorCode) : base($"{typeof(T).Name} Error: {errorCode}")
+    {
+        ErrorCode = errorCode;
+    }
 }
 
 public class ExternalTransferFailedException : Exception
@@ -16,5 +19,5 @@ public class AccountNotFoundException : Exception
 
 public class InvalidAccountException : Exception
 {
-    public InvalidAccountException() : base($"One or more of the provided accounts is not a client account."){}
+    public InvalidAccountException() : base($"One or more of the provided accounts is not a client account.") { }
 }
