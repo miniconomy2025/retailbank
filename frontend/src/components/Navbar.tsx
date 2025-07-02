@@ -5,8 +5,11 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Navbar() {
+  const navigate = useNavigate();
+
   return (
     <div className="w-full h-12 flex justify-end pr-4 items-center bg-white shadow">
       <NavigationMenu>
@@ -14,19 +17,23 @@ function Navbar() {
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
               <Link
-                to="/account/123"
-                className="text-sm font-medium text-black hover:underline px-3 py-2"
+                to="/transfers"
+                className="font-medium px-3 py-2"
               >
-                Accounts
+                Transfers
               </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
-              <Link
-                to="/"
-                className="text-sm font-medium text-black hover:underline px-3 py-2"
-              >
+              <Link to="/accounts" className="font-medium px-3 py-2">
+                Accounts
+              </Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink onClick={() => navigate("/")} asChild>
+              <Link to="/" className="font-medium px-3 py-2">
                 Dashboard
               </Link>
             </NavigationMenuLink>
