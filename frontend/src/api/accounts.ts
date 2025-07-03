@@ -1,5 +1,5 @@
 import { type Account } from "@/models/accounts";
-import type { Transfer } from "@/models/transfers";
+import type { TransferPage } from "@/models/transfers";
 import { apiFetch } from "@/utils/api";
 
 export async function getAccounts(): Promise<Account[]> {
@@ -24,16 +24,16 @@ export async function getAccount(accountId: number): Promise<Account> {
 }
 
 export async function getAccountTransfers(
-  accountId: number
-): Promise<Transfer[]> {
+  accountId: number,
+  nextUrl?: string
+): Promise<TransferPage> {
   const response = await apiFetch({
-    path: `/accounts/${accountId}/transfers`,
+    path: nextUrl || `/accounts/${accountId}/transfers?limit=25`,
     method: "GET",
   });
+
   if (!response.ok) {
     throw new Error(`${response.status}`);
   }
-
-  const data = await response.json();
-  return data?.items;
+  return await response.json();
 }
