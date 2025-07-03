@@ -14,20 +14,24 @@ function Navbar() {
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
               <Link
-                to="/account/123"
-                className="text-sm font-medium text-black hover:underline px-3 py-2"
+                to="/transfers"
+                className="font-medium px-3 py-2"
               >
+                Transfers
+              </Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink asChild>
+              <Link to="/accounts" className="font-medium px-3 py-2">
                 Accounts
               </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
-              <Link
-                to="/"
-                className="text-sm font-medium text-black hover:underline px-3 py-2"
-              >
-                Dashboard
+              <Link to="/" className="font-medium px-3 py-2">
+                Overview
               </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
