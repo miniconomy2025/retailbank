@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using RetailBank.Exceptions;
 using RetailBank.Extensions;
 using RetailBank.Models;
 using RetailBank.Repositories;
@@ -12,6 +13,16 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
     
     public async Task<ulong> CreateLoanAccount(ulong debitAccountNumber, ulong loanAmount)
     {
+        {
+            var debitAccount = await ledgerRepository.GetAccount(debitAccountNumber);
+
+            if (!debitAccount.HasValue)
+                throw new AccountNotFoundException(debitAccountNumber);
+
+            if (debitAccount.Value.Code != (ushort)LedgerAccountCode.Transactional)
+                throw new InvalidAccountException((LedgerAccountCode)debitAccount.Value.Code, LedgerAccountCode.Transactional);
+        }
+
         var accountNumber = GenerateLoanAccountNumber();
 
         await ledgerRepository.CreateAccount(
@@ -36,7 +47,7 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
             ?? throw new AccountNotFoundException(loanAccountId);
 
         if (loanAccount.Code != (ushort)LedgerAccountCode.Loan)
-            throw new InvalidAccountException();
+            throw new InvalidAccountException((LedgerAccountCode)loanAccount.Code, LedgerAccountCode.Loan);
 
         var balance = loanAccount.BalancePosted();
         var interest = balance / 12 * InterestRate / 100;
@@ -54,7 +65,7 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
             ?? throw new AccountNotFoundException(loanAccountId);
         
         if (loanAccount.Code != (ushort)LedgerAccountCode.Loan)
-            throw new InvalidAccountException();
+            throw new InvalidAccountException((LedgerAccountCode)loanAccount.Code, LedgerAccountCode.Loan);
         
         var installment = loanAccount.UserData64;
 
