@@ -51,7 +51,7 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
         }
     }
 
-    public async Task<UInt128> PaySalary(ulong accountId)
+    public async Task PaySalary(ulong accountId)
     {
         var account = await ledgerRepository.GetAccount(accountId) ?? throw new AccountNotFoundException(accountId);
 
@@ -61,7 +61,6 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
         var salary = account.UserData64;
 
         var id = await ledgerRepository.Transfer(new LedgerTransfer((ulong)BankId.Retail, account.Id, salary));
-        return id;
     }
 
     private async Task<UInt128> ExternalCommercialTransfer(ulong payerAccountId, ulong externalAccountId, UInt128 amount)
