@@ -8,5 +8,5 @@ public interface ITransferService
     public Task<IEnumerable<TransferEvent>> GetTransfers(uint limit, ulong timestampMax);
 
     public Task<UInt128> Transfer(ulong fromAccount, ulong toAccount, UInt128 amountCents);
-    public Task<UInt128> PaySalary(ulong account);
+    public Task PaySalary(ulong account);
 }
