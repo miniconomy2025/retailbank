@@ -1,11 +1,12 @@
 using RetailBank.Exceptions;
 using RetailBank.Models;
 using RetailBank.Models.Dtos;
+using RetailBank.Models.Interbank;
 using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
-public class TransferService(ILedgerRepository ledgerRepository) : ITransferService
+public class TransferService(ILedgerRepository ledgerRepository, IInterbankClient interbankClient) : ITransferService
 {
     public async Task<TransferEvent?> GetTransfer(UInt128 id)
     {
@@ -68,29 +69,30 @@ public class TransferService(ILedgerRepository ledgerRepository) : ITransferServ
         var transfer = new LedgerTransfer(payerAccountId, (ulong)BankId.Commercial, amount, externalAccountId);
         var pendingId = await ledgerRepository.StartTransfer(transfer);
 
-        if (await TryExternalCommercialTransfer(externalAccountId, amount))
-        {
-            var id = await ledgerRepository.PostPendingTransfer(pendingId, transfer);
-            return id;
-        }
-        else
-        {
-            await ledgerRepository.VoidPendingTransfer(pendingId, transfer);
-            throw new ExternalTransferFailedException();
-        }
-    }
+        var result = await interbankClient.TryNotify(BankId.Commercial, pendingId.ToString("X"), payerAccountId, externalAccountId, amount);
 
-    private static async Task<bool> TryExternalCommercialTransfer(ulong externalAccountId, UInt128 amount)
-    {
-        // Todo: This function should attempt to call the endpoint provided by the commercial bank to initiate the transfer of 
-        // funds on their end. This should try multiple times and the endpoint should be idempotent
-        await Task.Delay(1000);
-        return true;
+        switch (result)
+        {
+            case NotificationResult.Succeeded:
+                var id = await ledgerRepository.PostPendingTransfer(pendingId, transfer);
+                return id;
+            case NotificationResult.Failed:
+                await ledgerRepository.VoidPendingTransfer(pendingId, transfer);
+                throw new ExternalTransferFailedException();
+            default:
+                // We have not received a success or failure response
+                // from the external service, so we cannot know whether
+                // the external service has processed the transaction
+                // or not. The transfer must be left as pending and then 
+                // must be retried or manually resolved later.
+                throw new ExternalTransferFailedException();
+        }
     }
 
     private static BankId? GetBankCode(UInt128 accountNumber)
     {
-        var prefix = (ushort)(accountNumber / (UInt128)Math.Pow(10, Math.Log10((double)accountNumber) - 3));
+        var divisor = (UInt128)Math.Pow(10, (int)Math.Log10((double)accountNumber) - 3);
+        var prefix = (ushort)(accountNumber / divisor);
         var bankCode = (BankId)prefix;
 
         if (Enum.IsDefined(bankCode))

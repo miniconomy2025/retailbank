@@ -5,5 +5,5 @@ public record SimulationOptions
     public const string Section = "Simulation";
 
     // seconds per day
-    public required ushort Period { get; init; }
+    public required uint Period { get; init; }
 }

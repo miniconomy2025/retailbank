@@ -17,7 +17,9 @@ public record TransferEvent(
         : this(
             transfer.Id.ToString("X"),
             transfer.DebitAccountId,
-            transfer.CreditAccountId,
+            // If interbank transfer, credit account is in userData128
+            Enum.IsDefined((BankId)(ulong)transfer.CreditAccountId) && transfer.CreditAccountId != (ulong)BankId.Retail
+              ? transfer.UserData128 : transfer.CreditAccountId,
             transfer.Amount,
             transfer.PendingId > 0 ? transfer.PendingId.ToString("X") : null,
             transfer.Timestamp,

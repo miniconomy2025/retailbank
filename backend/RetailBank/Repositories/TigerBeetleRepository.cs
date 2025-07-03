@@ -39,13 +39,14 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
     {
         var filter = new QueryFilter();
         filter.Limit = limit;
-        filter.TimestampMax = filter.TimestampMax;
+        filter.TimestampMax = timestampMax;
         filter.Flags = QueryFilterFlags.Reversed;
 
         if (code.HasValue)
             filter.Code = (ushort)code.Value;
 
-        return await tbClientProvider.Client.QueryAccountsAsync(filter);
+        var accounts = await tbClientProvider.Client.QueryAccountsAsync(filter);
+        return accounts;
     }
 
     public async Task<Account?> GetAccount(UInt128 accountId)
@@ -61,7 +62,8 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         filter.TimestampMax = timestampMax;
         filter.Flags = side.ToAccountFilterFlags() | AccountFilterFlags.Reversed;
 
-        return await tbClientProvider.Client.GetAccountTransfersAsync(filter);
+        var transfers = await tbClientProvider.Client.GetAccountTransfersAsync(filter);
+        return transfers;
     }
 
     public async Task<Transfer[]> GetTransfers(uint limit, ulong timestampMax)
@@ -71,7 +73,8 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         filter.TimestampMax = timestampMax;
         filter.Flags = QueryFilterFlags.Reversed;
 
-        return await tbClientProvider.Client.QueryTransfersAsync(filter);
+        var transfers = await tbClientProvider.Client.QueryTransfersAsync(filter);
+        return transfers;
     }
 
     public async Task<Transfer?> GetTransfer(UInt128 id)
@@ -104,7 +107,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
 
     public async Task<UInt128> StartTransfer(LedgerTransfer simpleTransfer)
     {
-        var transfer = simpleTransfer.ToTransfer();
+        var transfer = simpleTransfer.ToTransfer(TransferFlags.Pending);
         var result = await tbClientProvider.Client.CreateTransferAsync(transfer);
 
         if (result != CreateTransferResult.Ok)
