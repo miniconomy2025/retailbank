@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using RetailBank.Exceptions;
 using RetailBank.Models.Dtos;
 using RetailBank.Services;
 using TigerBeetle;
@@ -12,9 +13,10 @@ public static class TransferEndpoints
     {
         routes
             .MapPost("/transfers", CreateTransfer)
-            .Produces(StatusCodes.Status201Created)
+            .Produces<CreateTransferResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .WithSummary("Transfer")
             .WithDescription(
                 """
                 Transfer money between accounts. Debiting account
@@ -29,6 +31,7 @@ public static class TransferEndpoints
         routes
             .MapGet("/transfers", GetTransfers)
             .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK)
+            .WithSummary("Get All Transfers")
             .WithDescription(
                 """
                 Get all transfers. `next` will contain the URL for
@@ -40,7 +43,13 @@ public static class TransferEndpoints
         routes
             .MapGet("/transfers/{id}", GetTransfer)
             .Produces<TransferEvent>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get A Transfer")
+            .WithDescription(
+                """
+                Get information about a transfer.
+                """
+            );
 
         return routes;
     }
@@ -53,29 +62,11 @@ public static class TransferEndpoints
     {
         try
         {
-            await transactionService.Transfer(request.From, request.To, request.AmountCents);
-            return Results.Created();
+            var id = await transactionService.Transfer(request.From, request.To, request.AmountCents);
+            return Results.Ok(new CreateTransferResponse(id.ToString("X")));
         }
-        catch (InvalidAccountException ex)
-        {
-            return Results.BadRequest(ex.Message);
-        }
-        catch (AccountNotFoundException ex)
-        {
-            return Results.BadRequest(ex.Message);
-        }
-        catch (ExternalTransferFailedException ex)
-        {
-            return Results.Problem(
-                detail: $"Downstream service is unavailable. {ex.Message}",
-                statusCode: StatusCodes.Status503ServiceUnavailable,
-                title: "Service Unavailable"
-            );
-        }
-
         catch (TigerBeetleResultException<CreateTransferResult> ex)
         {
-            Console.WriteLine("The error code is" + ex.ErrorCode);
             if (ex.ErrorCode == CreateTransferResult.ExceedsCredits)
             {
                 return Results.Problem(
@@ -84,8 +75,9 @@ public static class TransferEndpoints
                     detail: "The account does not have enough funds to complete this transfer."
                 );
             }
-
-            logger.LogError(ex, ex.Message);
+            
+            logger.LogError("An unexpected exception has occurred while executing transfer, {}: {}", request, ex);
+            
             return Results.StatusCode(500);
         }
     }

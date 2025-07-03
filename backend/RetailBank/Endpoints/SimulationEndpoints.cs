@@ -5,6 +5,7 @@ using RetailBank.Models;
 using RetailBank.Repositories;
 using TigerBeetle;
 using RetailBank.Extensions;
+using RetailBank.Exceptions;
 
 namespace RetailBank.Endpoints;
 
@@ -16,11 +17,13 @@ public static class SimulationEndpoints
         routes
             .MapPost("/simulation", StartSimulation)
             .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithSummary("Start Simulation");
 
         routes
             .MapDelete("/simulation", ResetSimulation)
-            .Produces(StatusCodes.Status200OK);
+            .Produces(StatusCodes.Status202Accepted)
+            .WithSummary("Reset Simulation");
 
         return routes;
     }

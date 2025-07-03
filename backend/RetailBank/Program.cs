@@ -4,6 +4,7 @@ using RetailBank.Endpoints;
 using RetailBank.Services;
 using RetailBank;
 using RetailBank.Repositories;
+using RetailBank.ExceptionHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,9 +27,12 @@ builder.Services.Configure<JsonOptions>(options =>
 builder.Services
     .AddSingleton<ILedgerRepository, TigerBeetleRepository>()
     .AddHostedService<SimulationRunner>()
-    .AddServices();
+    .AddServices()
+    .AddExceptionHandlers();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -41,5 +45,6 @@ app.UseHttpsRedirection();
 
 app.AddEndpoints();
 
-app.Run();
+app.UseStatusCodePages();
 
+app.Run();

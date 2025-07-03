@@ -12,6 +12,7 @@ public static class AccountEndpoints
         routes
             .MapPost("/accounts", CreateTransactionalAccount)
             .Produces<CreateAccountResponse>(StatusCodes.Status200OK)
+            .WithSummary("Create Transactional Account")
             .WithDescription(
                 """
                 Create a transactional account. Transactional 
@@ -23,6 +24,7 @@ public static class AccountEndpoints
         routes
             .MapGet("/accounts", GetAccounts)
             .Produces<IEnumerable<LedgerAccount>>(StatusCodes.Status200OK)
+            .WithSummary("Get All Accounts")
             .WithDescription(
                 """
                 Lookup all accounts by account type in order of newest to oldest.
@@ -43,6 +45,7 @@ public static class AccountEndpoints
             .MapGet("/accounts/{id:long}", GetAccount)
             .Produces<LedgerAccount>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
+            .WithSummary("Get An Account")
             .WithDescription(
                 """
                 Get information about any account.
@@ -60,6 +63,7 @@ public static class AccountEndpoints
         routes
             .MapGet("/accounts/{id:long}/transfers", GetAccountTransfers)
             .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK)
+            .WithSummary("Get An Account's Transfers")
             .WithDescription(
                 """
                 Get all transfers credited/debited to an account,
