@@ -16,6 +16,7 @@ public static class TransferEndpoints
             .Produces<CreateTransferResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .WithSummary("Transfer")
             .WithDescription(
                 """
                 Transfer money between accounts. Debiting account
@@ -30,6 +31,7 @@ public static class TransferEndpoints
         routes
             .MapGet("/transfers", GetTransfers)
             .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK)
+            .WithSummary("Get All Transfers")
             .WithDescription(
                 """
                 Get all transfers. `next` will contain the URL for
@@ -41,7 +43,13 @@ public static class TransferEndpoints
         routes
             .MapGet("/transfers/{id}", GetTransfer)
             .Produces<TransferEvent>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get A Transfer")
+            .WithDescription(
+                """
+                Get information about a transfer.
+                """
+            );
 
         return routes;
     }

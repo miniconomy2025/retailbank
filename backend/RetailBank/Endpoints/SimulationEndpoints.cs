@@ -18,12 +18,12 @@ public static class SimulationEndpoints
             .MapPost("/simulation", StartSimulation)
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
-            .WithDescription("Start Simulation");
+            .WithSummary("Start Simulation");
 
         routes
             .MapDelete("/simulation", ResetSimulation)
-            .Produces(StatusCodes.Status200OK)
-            .WithDescription("Reset Simulation");
+            .Produces(StatusCodes.Status202Accepted)
+            .WithSummary("Reset Simulation");
 
         return routes;
     }
