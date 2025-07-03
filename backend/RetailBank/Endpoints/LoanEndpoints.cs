@@ -10,6 +10,7 @@ public static class LoanEndpoints
         routes
             .MapPost("/loans", CreateLoanAccount)
             .Produces<CreateAccountResponse>(StatusCodes.Status200OK)
+            .WithSummary("Issue a Loan to a Transactional Account")
             .WithDescription(
                 """
                 Create a loan account of the requested amount,
