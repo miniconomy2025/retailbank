@@ -23,7 +23,7 @@ function PageWrapper({ children, loading, error }: PageWrapperProps) {
     );
   }
 
-  return <div>{children}</div>;
+  return children;
 }
 
 export default PageWrapper;
