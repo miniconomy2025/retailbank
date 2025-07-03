@@ -15,7 +15,7 @@ export async function getTransfers(
   return await response.json();
 }
 
-export async function getTransfer(transferId: number): Promise<Transfer[]> {
+export async function getTransfer(transferId: string): Promise<Transfer> {
   const response = await apiFetch({
     path: `/transfers/${transferId}`,
     method: "GET",
