@@ -14,6 +14,7 @@ export default function Overview() {
   } = useQuery<Account>({
     queryKey: [`account-${1000}`],
     queryFn: () => getAccount(1000),
+    retry: false,
   });
 
   const {
@@ -23,6 +24,7 @@ export default function Overview() {
   } = useQuery<Account>({
     queryKey: [`account-${1001}`],
     queryFn: () => getAccount(1001),
+    retry: false,
   });
 
   const {
@@ -32,6 +34,7 @@ export default function Overview() {
   } = useQuery<Account>({
     queryKey: [`account-${1002}`],
     queryFn: () => getAccount(1002),
+    retry: false,
   });
 
   const {
@@ -41,6 +44,7 @@ export default function Overview() {
   } = useQuery<Account>({
     queryKey: [`account-${1003}`],
     queryFn: () => getAccount(1003),
+    retry: false,
   });
 
   const {
@@ -50,6 +54,7 @@ export default function Overview() {
   } = useQuery<Account>({
     queryKey: [`account-${1004}`],
     queryFn: () => getAccount(1004),
+    retry: false,
   });
 
   const {
@@ -59,6 +64,7 @@ export default function Overview() {
   } = useQuery<Account>({
     queryKey: [`account-${2000}`],
     queryFn: () => getAccount(2000),
+    retry: false,
   });
 
   return (
@@ -80,13 +86,16 @@ export default function Overview() {
         commercialBankErr
       }
     >
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <AccountCard title="Retail Bank" account={retailAcc} />
-        <AccountCard title="Owner’s Equity" account={ownersEquityAcc} />
-        <AccountCard title="Interest Income" account={interestIncomeAcc} />
-        <AccountCard title="Loan Control" account={loanControlAcc} />
-        <AccountCard title="Bad Debts" account={badDebtsAcc} />
-        <AccountCard title="Commercial Bank" account={commercialBankAcc} />
+      <div className="h-full flex flex-col gap-4">
+        <h1 className="text-3xl font-bold text-left">Notable Accounts</h1>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <AccountCard title="Retail Bank" account={retailAcc} />
+          <AccountCard title="Owner’s Equity" account={ownersEquityAcc} />
+          <AccountCard title="Interest Income" account={interestIncomeAcc} />
+          <AccountCard title="Loan Control" account={loanControlAcc} />
+          <AccountCard title="Bad Debts" account={badDebtsAcc} />
+          <AccountCard title="Commercial Bank" account={commercialBankAcc} />
+        </div>
       </div>
     </PageWrapper>
   );

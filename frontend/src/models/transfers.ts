@@ -19,7 +19,7 @@ export enum TransferEventType {
   REOPEN_DEBIT = "ReopenDebit",
 }
 
-  export interface TransferPage {
-    items: Transfer[];
-    next?: string | null;
-  }
+export interface TransferPage {
+  items: Transfer[];
+  next?: string | null;
+}

@@ -11,6 +11,11 @@ export interface Account {
   balancePosted: number;
 }
 
+export interface AccountPage {
+  items: Account[];
+  next?: string | null;
+}
+
 enum LedgerAccountType {
   BANK = "Bank",
   INTERNAL = "Internal",

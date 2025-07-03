@@ -29,7 +29,7 @@ export default function Account() {
   } = useQuery<Account>({
     queryKey: [`account-${accountId}`],
     queryFn: () => getAccount(Number(accountId ?? 0)),
-    refetchInterval: 15000,
+    retry: false,
   });
 
   const {
@@ -44,6 +44,7 @@ export default function Account() {
       getAccountTransfers(accountId, pageParam as string | undefined),
     getNextPageParam: (lastPage) => lastPage.next || undefined,
     initialPageParam: undefined,
+    retry: false,
   });
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -76,11 +77,9 @@ export default function Account() {
       error={accountError || transfersError}
     >
       <div className="h-full flex flex-col gap-4">
-        <div className="flex">
-          <div>
-            <h1 className="text-3xl font-bold text-left">Accounts Transfers</h1>
-            <p className="text-left">Account {accountId}</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-left">Accounts Transfers</h1>
+          <p className="text-left">Account {accountId}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
