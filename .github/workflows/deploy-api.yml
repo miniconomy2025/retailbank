@@ -24,7 +24,20 @@ jobs:
 
       - name: Deploy
         run: |
-          scp -i key.pem -r ./api/* ${{ vars.EC2_HOST }}:/home/ubuntu/api/
+          # Copy backend to EC2
+          scp -i key.pem -r ./backend/* ubuntu@${{ vars.EC2_HOST }}:~/api
 
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ vars.EC2_HOST }} << 'EOF'
+          # Build and run on EC2
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ vars.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/api/RetailBank
+            
+            # Kill any existing process
+            pkill -f "dotnet.*RetailBank" || true
+            
+            # Build and run
+            dotnet restore
+            dotnet build --configuration Release
+            nohup dotnet run --configuration Release --urls "http://0.0.0.0:5000" > /home/ubuntu/api.log 2>&1 &
+            
+            echo "API deployed and running on port 5000"
           EOF
