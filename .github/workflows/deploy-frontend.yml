@@ -15,6 +15,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
       - name: Setup SSH key
         run: |
           echo "$EC2_KEY" > key.pem
@@ -24,7 +41,8 @@ jobs:
 
       - name: Deploy
         run: |
-          scp -i key.pem -r ./frontend/* ${{ vars.EC2_HOST }}:/home/ubuntu/frontend/
+          # Copy built files to EC2 home directory first
+          scp -i key.pem -o StrictHostKeyChecking=no -r ./frontend/dist/* ${{ vars.EC2_HOST }}:~/frontend-build/
 
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ vars.EC2_HOST }} << 'EOF'
-          EOF
+          # Move files to web directory and set permissions
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ vars.EC2_HOST }} "sudo rm -rf /var/www/frontend/* && sudo mv ~/frontend-build/* /var/www/frontend/ && sudo chown -R www-data:www-data /var/www/frontend && sudo chmod -R 755 /var/www/frontend && sudo systemctl reload nginx"

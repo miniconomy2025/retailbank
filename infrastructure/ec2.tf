@@ -4,6 +4,18 @@ resource "aws_instance" "retail_bank_ec2" {
   subnet_id              = aws_subnet.retail_bank_public_subnet.id
   vpc_security_group_ids = [aws_security_group.retail_bank_ec2_sg.id]
   key_name               = aws_key_pair.ssh_key_pair.key_name
+
+  user_data = <<-EOF
+    #!/bin/bash
+    sudo apt update
+    sudo apt install -y apt-transport-https ca-certificates wget
+    wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
+    sudo apt update
+    sudo apt install -y dotnet-sdk-8.0
+  EOF
+
   tags = {
     Name = "retail_bank_ec2"
   }
