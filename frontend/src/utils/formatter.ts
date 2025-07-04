@@ -3,7 +3,7 @@ export function formatCurrency(value: number | undefined) {
 
   return (
     "Đ " +
-    val
+    (val/100)
       .toFixed(2)
       .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
   );

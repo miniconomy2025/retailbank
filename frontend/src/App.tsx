@@ -6,6 +6,7 @@ import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 import Accounts from "./pages/Accounts";
 import Transfers from "./pages/Transfers";
+import TransferPage from "./pages/Transfer";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/accounts/:accountId" element={<Account />} />
           <Route path="/transfers" element={<Transfers />} />
+          <Route path="/transfers/:transferId" element={<TransferPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

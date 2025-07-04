@@ -1,8 +1,5 @@
-import { useState } from "react";
-import { Search, ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -12,16 +9,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type Account } from "@/models/accounts";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getAccount, getAccountTransfers } from "@/api/accounts";
 import PageWrapper from "@/components/PageWrapper";
 import { formatCurrency } from "@/utils/formatter";
 import { useParams } from "react-router-dom";
-import type { Transfer } from "@/models/transfers";
+import type { Transfer, TransferPage } from "@/models/transfers";
+import { useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Account() {
-  const { accountId } = useParams();
-  const [searchTerm, setSearchTerm] = useState("");
+  const { accountId: accountIdString } = useParams();
+  const accountId = Number(accountIdString ?? 0);
 
   const {
     data: account,
@@ -30,44 +29,57 @@ export default function Account() {
   } = useQuery<Account>({
     queryKey: [`account-${accountId}`],
     queryFn: () => getAccount(Number(accountId ?? 0)),
-    refetchInterval: 15000,
+    retry: false,
   });
 
   const {
-    data: transfers,
-    isLoading: isTransferLoading,
-    error: transferError,
-  } = useQuery<Transfer[]>({
-    queryKey: [`account-transfers-${accountId}`],
-    queryFn: () => getAccountTransfers(Number(accountId ?? 0)),
-    refetchInterval: 15000,
+    data,
+    isLoading: isTransfersLoading,
+    error: transfersError,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery<TransferPage>({
+    queryKey: ["account-transfers", accountId],
+    queryFn: ({ pageParam }) =>
+      getAccountTransfers(accountId, pageParam as string | undefined),
+    getNextPageParam: (lastPage) => lastPage.next || undefined,
+    initialPageParam: undefined,
+    retry: false,
   });
 
-  const filteredTransfers = transfers?.filter((transfer) => {
-    const matchesSearch =
-      transfer.transactionId.toString().includes(searchTerm.toLowerCase()) ||
-      transfer.eventType
-        .toString()
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-    return matchesSearch;
-  });
+  useEffect(() => {
+    if (!bottomRef.current || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 1 }
+    );
+
+    observer.observe(bottomRef.current);
+
+    return () => observer.disconnect();
+  }, [hasNextPage, fetchNextPage]);
+
+  const transfers = data?.pages.flatMap((page) => page.items) ?? [];
 
   const isDebit = (transfer: Transfer) =>
-    transfer.debitAccountNumber === Number(accountId ?? 0);
+    transfer.debitAccountNumber === accountId;
 
   return (
     <PageWrapper
-      loading={isAccountLoading || isTransferLoading}
-      error={accountError || transferError}
+      loading={isAccountLoading || isTransfersLoading}
+      error={accountError || transfersError}
     >
-      <div className="flex flex-col gap-4">
-        <div className="flex ">
-          <div>
-            <h1 className="text-3xl font-bold text-left">Account Details</h1>
-            <p className="text-left">Account #{accountId}</p>
-          </div>
+      <div className="h-full flex flex-col gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-left">Accounts Transfers</h1>
+          <p className="text-left">Account {accountId}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -98,9 +110,6 @@ export default function Account() {
               <div className="text-xl font-bold">
                 {formatCurrency(account?.debitsPosted)}
               </div>
-              <p className="text-s">
-                Pending: {formatCurrency(account?.debitsPending)}
-              </p>
             </CardContent>
           </Card>
           <Card>
@@ -111,41 +120,30 @@ export default function Account() {
               <div className="text-xl font-bold">
                 {formatCurrency(account?.creditsPending)}
               </div>
-              <p className="text-s">
-                Pending: {formatCurrency(account?.creditsPending)}
-              </p>
             </CardContent>
           </Card>
         </div>
-        <Card>
-          <CardContent className="flex flex-col gap-4">
-            <CardTitle className="text-left">Accounts Transfers</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4" />
-                <Input
-                  placeholder="Search transfers by ID or type..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+        <div className="rounded-md border overflow-auto">
+          {transfers?.length === 0 ? (
+            <div className="text-center py-8 ">
+              No transfers found for this account
             </div>
-            <div className="rounded-md border">
+          ) : (
+            <>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>From Account</TableHead>
-                    <TableHead>To Account</TableHead>
+                    <TableHead>From</TableHead>
+                    <TableHead>To</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTransfers?.map((transfer) => (
-                    <TableRow key={transfer.transactionId}>
+                  {transfers?.map((transfer) => (
+                    <TableRow key={transfer.transactionId + transfer.timestamp}>
                       <TableCell className="text-left">
                         {transfer.transactionId}
                       </TableCell>
@@ -180,15 +178,10 @@ export default function Account() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-
-            {filteredTransfers?.length === 0 && (
-              <div className="text-center py-8 ">
-                No transfers found matching your criteria.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <div ref={bottomRef} className="h-px" />
+            </>
+          )}
+        </div>
       </div>
     </PageWrapper>
   );

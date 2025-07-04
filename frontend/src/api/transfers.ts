@@ -1,20 +1,21 @@
-import type { Transfer } from "@/models/transfers";
+import type { Transfer, TransferPage } from "@/models/transfers";
 import { apiFetch } from "@/utils/api";
 
-export async function getTransfers(): Promise<Transfer[]> {
+export async function getTransfers(
+  nextUrl?: string
+): Promise<TransferPage> {
   const response = await apiFetch({
-    path: `/transfers`,
+    path: nextUrl || `/transfers?limit=25`,
     method: "GET",
   });
+
   if (!response.ok) {
     throw new Error(`${response.status}`);
   }
-
-  const data = await response.json();
-  return data?.items;
+  return await response.json();
 }
 
-export async function getTransfer(transferId: number): Promise<Transfer[]> {
+export async function getTransfer(transferId: string): Promise<Transfer> {
   const response = await apiFetch({
     path: `/transfers/${transferId}`,
     method: "GET",
