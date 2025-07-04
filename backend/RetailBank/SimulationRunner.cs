@@ -30,7 +30,7 @@ public class SimulationRunner(
                 if (simulationController.IsRunning)
                 {
                     await RunSimulationStepAsync();
-                    await Task.Delay(TimeSpan.FromSeconds(options.Value.Period), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(options.Value.Period / 2), stoppingToken);
                     continue;
                 }
             
@@ -76,6 +76,8 @@ public class SimulationRunner(
             
             transactionalAccounts = await accountService.GetAccounts(LedgerAccountCode.Transactional, BatchSize, transactionalAccounts.Last().CreatedAt - 1);
         }
+
+        TimeSpan.FromSeconds(options.Value.Period / 2);
 
         // Charge Interest & Pay Installments
 

@@ -8,6 +8,9 @@ public static class Bootstrapper
     {
         services.AddOptions<ConnectionStrings>().BindConfiguration(ConnectionStrings.Section);
         services.AddOptions<SimulationOptions>().BindConfiguration(SimulationOptions.Section);
+        services.AddOptions<InterbankNotificationOptions>().BindConfiguration(InterbankNotificationOptions.Section);
+
+        services.AddHttpClient<IInterbankClient, InterbankClient>();
 
         return services
             .AddSingleton<ITigerBeetleClientProvider, TigerBeetleClientProvider>()
