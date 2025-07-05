@@ -89,7 +89,7 @@ public static class AccountEndpoints
     public static async Task<IResult> GetAccounts(
         HttpContext httpContext,
         IAccountService accountService,
-        [FromQuery] LedgerAccountCode? accountType = null,
+        [FromQuery] LedgerAccountType? accountType = null,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong timestampMax = 0
     )

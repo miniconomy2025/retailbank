@@ -34,7 +34,7 @@ public static class LoanEndpoints
     {
         validator.ValidateAndThrow(request);
 
-        var debtorAccountId = UInt128.Parse(request.DebtorAccountNumber);
+        var debtorAccountId = UInt128.Parse(request.DebtorAccountId);
         var accountId = await loanService.CreateLoanAccount(debtorAccountId, request.LoanAmountCents);
 
         return Results.Ok(new CreateAccountResponse(accountId.ToString()));

@@ -24,8 +24,8 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
     {
         var payerAccount = await ledgerRepository.GetAccount(payerAccountId) ?? throw new AccountNotFoundException(payerAccountId);
 
-        if (payerAccount.AccountType != LedgerAccountCode.Transactional)
-            throw new InvalidAccountException(payerAccount.AccountType, LedgerAccountCode.Transactional);
+        if (payerAccount.AccountType != LedgerAccountType.Transactional)
+            throw new InvalidAccountException(payerAccount.AccountType, LedgerAccountType.Transactional);
 
         var payeeBankCode = GetBankCode(payeeAccountId);
 
@@ -34,11 +34,11 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
             case BankId.Retail:
                 var payeeAccount = await ledgerRepository.GetAccount(payeeAccountId) ?? throw new AccountNotFoundException(payeeAccountId);
 
-                if (payeeAccount.AccountType != LedgerAccountCode.Transactional)
-                    throw new InvalidAccountException(payerAccount.AccountType, LedgerAccountCode.Transactional);
+                if (payeeAccount.AccountType != LedgerAccountType.Transactional)
+                    throw new InvalidAccountException(payerAccount.AccountType, LedgerAccountType.Transactional);
 
                 var idInternal = await ledgerRepository.Transfer(
-                    new LedgerTransfer(ID.Create(), payerAccountId, payeeAccountId, amount, null, 0, TransferKind.Transfer, reference)
+                    new LedgerTransfer(ID.Create(), payerAccountId, payeeAccountId, amount, null, 0, TransferAction.Transfer, reference)
                 );
                 return idInternal;
             case BankId.Commercial:
@@ -53,17 +53,20 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
     {
         var account = await ledgerRepository.GetAccount(accountId) ?? throw new AccountNotFoundException(accountId);
 
-        if (account.AccountType != LedgerAccountCode.Transactional)
-            throw new InvalidAccountException(account.AccountType, LedgerAccountCode.Transactional);
+        if (account.AccountType != LedgerAccountType.Transactional)
+            throw new InvalidAccountException(account.AccountType, LedgerAccountType.Transactional);
 
-        var salary = account.SalaryOrInstallment;
+        if (account.DebitOrder == null)
+            return;
 
-        var id = await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, account.Id, salary));
+        var salary = account.DebitOrder.Amount;
+
+        var id = await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), account.DebitOrder.DebitAccountId, account.Id, salary));
     }
 
     private async Task<UInt128> ExternalCommercialTransfer(UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong? reference)
     {
-        var pendingTransfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, null, 0, TransferKind.StartTransfer, reference);
+        var pendingTransfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, null, 0, TransferAction.StartTransfer, reference);
         var pendingId = await ledgerRepository.Transfer(pendingTransfer);
 
         var result = await interbankClient.TryNotify(BankId.Commercial, pendingId, payerAccountId, externalAccountId, amount, reference);
@@ -72,8 +75,8 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
         {
             case NotificationResult.Succeeded:
                 var completionTransfer = pendingTransfer with {
-                    PendingId = pendingId,
-                    Kind = TransferKind.CompleteTransfer,
+                    ParentId = pendingId,
+                    Action = TransferAction.CompleteTransfer,
                 };
                 
                 await ledgerRepository.Transfer(completionTransfer);
@@ -82,8 +85,8 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
             case NotificationResult.Rejected:
                 var cancellationTransfer = pendingTransfer with
                 {
-                    PendingId = pendingId,
-                    Kind = TransferKind.CancelTransfer,
+                    ParentId = pendingId,
+                    Action = TransferAction.CancelTransfer,
                 };
                 
                 await ledgerRepository.Transfer(cancellationTransfer);

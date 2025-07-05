@@ -10,31 +10,15 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
     public const uint LedgerId = 1;
     public const ushort TransferCode = 1;
 
-    public async Task CreateAccount(
-        UInt128 accountId,
-        LedgerAccountCode code,
-        AccountFlags flags,
-        UInt128 userData128,
-        ulong userData64,
-        uint userData32
-    )
+    public async Task CreateAccount(LedgerAccount account)
     {
-        var result = await tbClientProvider.Client.CreateAccountAsync(new Account
-        {
-            Id = accountId,
-            Code = (ushort)code,
-            UserData128 = userData128,
-            UserData64 = userData64,
-            UserData32 = userData32,
-            Ledger = LedgerId,
-            Flags = flags,
-        });
+        var result = await tbClientProvider.Client.CreateAccountAsync(account.ToAccount());
 
         if (result != CreateAccountResult.Ok)
             throw new TigerBeetleResultException<CreateAccountResult>(result);
     }
 
-    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax)
     {
         var filter = new QueryFilter();
         filter.Limit = limit;

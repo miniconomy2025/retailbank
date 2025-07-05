@@ -9,24 +9,27 @@ namespace RetailBank.Services;
 public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
 {
     private const ushort InterestRate = 10;
-    
+    private const ushort LoanPeriod = 60;
+
     public async Task<UInt128> CreateLoanAccount(UInt128 debitAccountNumber, ulong loanAmount)
     {
         {
             var debitAccount = await ledgerRepository.GetAccount(debitAccountNumber) ?? throw new AccountNotFoundException(debitAccountNumber);
 
-            if (debitAccount.AccountType != LedgerAccountCode.Transactional)
-                throw new InvalidAccountException(debitAccount.AccountType, LedgerAccountCode.Transactional);
+            if (debitAccount.AccountType != LedgerAccountType.Transactional)
+                throw new InvalidAccountException(debitAccount.AccountType, LedgerAccountType.Transactional);
         }
 
         var accountNumber = GenerateLoanAccountNumber();
 
+        var installment = CalculateInstallment(loanAmount, InterestRate, LoanPeriod);
+
         await ledgerRepository.CreateAccount(
-            accountNumber,
-            LedgerAccountCode.Loan,
-            AccountFlags.CreditsMustNotExceedDebits,
-            debitAccountNumber,
-            CalculateInstallment(loanAmount, InterestRate, 60)
+            new LedgerAccount(
+                accountNumber,
+                LedgerAccountType.Loan,
+                new DebitOrder(debitAccountNumber, installment)
+            )
         );
 
         await ledgerRepository.TransferLinked([
@@ -41,8 +44,8 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
     {
         var loanAccount = await ledgerRepository.GetAccount(loanAccountId) ?? throw new AccountNotFoundException(loanAccountId);
 
-        if (loanAccount.AccountType != LedgerAccountCode.Loan)
-            throw new InvalidAccountException(loanAccount.AccountType, LedgerAccountCode.Loan);
+        if (loanAccount.AccountType != LedgerAccountType.Loan)
+            throw new InvalidAccountException(loanAccount.AccountType, LedgerAccountType.Loan);
 
         var balance = loanAccount.BalancePosted;
         var interest = balance / 12 * InterestRate / 100;
@@ -59,12 +62,15 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
     {
         var loanAccount = await ledgerRepository.GetAccount(loanAccountId) ?? throw new AccountNotFoundException(loanAccountId);
         
-        if (loanAccount.AccountType != LedgerAccountCode.Loan)
-            throw new InvalidAccountException(loanAccount.AccountType, LedgerAccountCode.Loan);
-        
-        var installment = loanAccount.SalaryOrInstallment;
+        if (loanAccount.AccountType != LedgerAccountType.Loan)
+            throw new InvalidAccountException(loanAccount.AccountType, LedgerAccountType.Loan);
 
-        var loanDebitAccountId = loanAccount.LoanDebitAccount;
+        if (loanAccount.DebitOrder == null)
+            return;
+        
+        var installment = loanAccount.DebitOrder.Amount;
+
+        var loanDebitAccountId = loanAccount.DebitOrder.DebitAccountId;
         var loanDebitAccount = await ledgerRepository.GetAccount(loanDebitAccountId)
             ?? throw new AccountNotFoundException(loanDebitAccountId);
 

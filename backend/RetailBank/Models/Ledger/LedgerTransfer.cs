@@ -9,9 +9,9 @@ public record LedgerTransfer(
     UInt128 DebitAccountId,
     UInt128 CreditAccountId,
     UInt128 Amount,
-    UInt128? PendingId = null,
+    UInt128? ParentId = null,
     ulong Timestamp = 0,
-    TransferKind Kind = TransferKind.Transfer,
+    TransferAction Action = TransferAction.Transfer,
     ulong? Reference = null
 )
 {
@@ -61,8 +61,8 @@ public record LedgerTransfer(
             UserData32 = 0,
             Ledger = TigerBeetleRepository.LedgerId,
             Code = TigerBeetleRepository.TransferCode,
-            PendingId = PendingId ?? 0,
-            Flags = Kind.ToTransferFlags() | linkedFlag,
+            PendingId = ParentId ?? 0,
+            Flags = Action.ToTransferFlags() | linkedFlag,
         };
     }
 }
