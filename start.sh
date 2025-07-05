@@ -91,6 +91,7 @@ NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
 NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
 FRONTEND_APP_DIR="/var/www/retail-bank"
 
+sudo mkdir -p /var/www/retail-bank
 mv /home/ubuntu/frontend-build/* /var/www/retail-bank/
 
 echo "Installing nginx and certbot..."
