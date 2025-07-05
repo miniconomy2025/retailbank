@@ -23,7 +23,7 @@ aws secretsmanager get-secret-value \
 aws secretsmanager get-secret-value \
   --secret-id server-key \
   --query SecretString \
-  --output text > /etc/ssl/certs/server.key
+  --output text > /etc/ssl/private/server.key
 
 aws secretsmanager get-secret-value \
   --secret-id ca-cert \
