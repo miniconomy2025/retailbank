@@ -56,7 +56,7 @@ jobs:
 
       - name: Copy start.sh over
         run: |
-          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem start.sh ubuntu@EC2_HOST:~/start.sh
+          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem start.sh ubuntu@$EC2_HOST:~/start.sh
 
       - name: Copy tigerbeetle setup over
         run: |
