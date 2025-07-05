@@ -34,7 +34,9 @@ jobs:
           dotnet-version: '8.0.x' 
       
       - name: Stop systemd service if its already running
-        run: '[ -f "/etc/systemd/system/retail-bank.service" ] && sudo systemctl stop retail-bank.service'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_HOST << 'EOF'
+          '[ -f "/etc/systemd/system/retail-bank.service" ] && sudo systemctl stop retail-bank.service'
           
 
       - name: Build the api and move copy to the ec2
