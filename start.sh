@@ -105,18 +105,20 @@ server {
     root $FRONTEND_APP_DIR;
     index index.html;
 
-    location /api/ {
-        if ($request_method = GET) {
-            proxy_pass http://localhost:5000;
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-            proxy_set_header Origin \$http_origin;
-            proxy_buffering off;
+    location /api {
+        limit_except GET {
+            deny all;
         }
-        return 403;
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Origin $http_origin;
+        proxy_buffering off;
     }
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }
