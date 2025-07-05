@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-sudo apt update && sudo apt install -y jq && sudo apt-get install -y unzip && sudo apt install -y openjdk-17-jre-headless
+sudo apt update && sudo apt install -y jq && sudo apt-get install -y unzip && sudo apt install -y openjdk-17-jre-headless && sudo apt install unzip
 
 
 # install aws cli if necessary
