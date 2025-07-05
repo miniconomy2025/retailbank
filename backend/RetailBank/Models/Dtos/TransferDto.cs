@@ -4,25 +4,25 @@ using RetailBank.Models.Ledger;
 namespace RetailBank.Models.Dtos;
 
 public record TransferDto(
-    string TransactionId,
-    UInt128 DebitAccountNumber,
-    UInt128 CreditAccountNumber,
+    string TransferId,
+    string DebitAccountId,
+    string CreditAccountId,
     UInt128 Amount,
-    string? PendingId,
+    string? ParentId,
     ulong Timestamp,
-    TransferKind EventType,
+    TransferAction EventType,
     ulong? Reference
 )
 {
     public TransferDto(LedgerTransfer transfer)
         : this(
             transfer.Id.ToHex(),
-            transfer.DebitAccountId,
-            transfer.CreditAccountId,
+            transfer.DebitAccountId.ToString(),
+            transfer.CreditAccountId.ToString(),
             transfer.Amount,
-            transfer.PendingId.HasValue ? transfer.PendingId.Value.ToHex() : null,
+            transfer.ParentId.HasValue ? transfer.ParentId.Value.ToHex() : null,
             transfer.Timestamp,
-            transfer.Kind,
+            transfer.Action,
             transfer.Reference > 0 ? transfer.Reference : null
         )
     { }

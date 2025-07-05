@@ -45,7 +45,7 @@ public static class SimulationEndpoints
         {
             try
             {
-                await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Internal);
+                await ledgerRepository.CreateAccount(new LedgerAccount((ulong)variant, LedgerAccountType.Internal));
             }
             catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
         }
@@ -54,7 +54,7 @@ public static class SimulationEndpoints
         {
             try
             {
-                await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Internal);
+                await ledgerRepository.CreateAccount(new LedgerAccount((ulong)variant, LedgerAccountType.Internal));
             }
             catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
         }

@@ -4,7 +4,7 @@ namespace RetailBank.Models.Dtos;
 
 public record AccountDto(
     string Id,
-    LedgerAccountCode AccountType,
+    LedgerAccountType AccountType,
     UInt128 DebitsPending,
     UInt128 DebitsPosted,
     UInt128 CreditsPending,

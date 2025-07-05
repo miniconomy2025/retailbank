@@ -2,5 +2,5 @@
 
 public record CreateLoanAccountRequest(
     ulong LoanAmountCents,
-    string DebtorAccountNumber
+    string DebtorAccountId
 );

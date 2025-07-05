@@ -2,7 +2,7 @@
 
 namespace RetailBank.Models.Ledger;
 
-public enum TransferKind
+public enum TransferAction
 {
     Transfer = 0,
     StartTransfer = 2,
@@ -14,15 +14,15 @@ public enum TransferKind
     CloseCredit = 0x80 | StartTransfer,
 }
 
-public static class TransferKindExt
+public static class TransferActionExt
 {
-    public static TransferFlags ToTransferFlags(this TransferKind transferType)
+    public static TransferFlags ToTransferFlags(this TransferAction transferType)
     {
         return (TransferFlags)transferType;
     }
 
-    public static TransferKind ToTransferKind(this TransferFlags flags)
+    public static TransferAction ToTransferKind(this TransferFlags flags)
     {
-        return (TransferKind)flags;
+        return (TransferAction)flags;
     }
 }

@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using RetailBank.Models.Dtos;
 using RetailBank.Models.Ledger;
 using RetailBank.Repositories;
 
@@ -11,18 +10,12 @@ public class AccountService(ILedgerRepository ledgerRepository) : IAccountServic
     {
         var id = GenerateTransactionalAccountNumber();
 
-        await ledgerRepository.CreateAccount(
-            id,
-            LedgerAccountCode.Transactional,
-            TigerBeetle.AccountFlags.DebitsMustNotExceedCredits,
-            0,
-            salary
-        );
+        await ledgerRepository.CreateAccount(new LedgerAccount(id, LedgerAccountType.Transactional, new DebitOrder((ulong)BankId.Retail, salary)));
 
         return id;
     }
 
-    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax)
     {
         return await ledgerRepository.GetAccounts(code, limit, timestampMax);
     }

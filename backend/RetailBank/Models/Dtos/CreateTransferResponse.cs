@@ -1,3 +1,3 @@
 ﻿namespace RetailBank.Models.Dtos;
 
-public record CreateTransferResponse(string TransactionId);
+public record CreateTransferResponse(string TransferId);
