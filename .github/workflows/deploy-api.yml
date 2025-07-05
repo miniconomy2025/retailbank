@@ -60,7 +60,7 @@ jobs:
 
       - name: Copy tigerbeetle setup over
         run: |
-          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem ./backend/setup-tigerbeetle.sh ubuntu@EC2_HOST:~/setup-tigerbeetle.sh
+          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem ./backend/setup-tigerbeetle.sh ubuntu@$EC2_HOST:~/setup-tigerbeetle.sh
       
       - name: Run tigerbeetle setup
         run: |
