@@ -70,6 +70,6 @@ jobs:
       - name: Run start script
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_HOST << 'EOF'
-          bash ~/start.sh
+          sudo bash ~/start.sh
 
       
