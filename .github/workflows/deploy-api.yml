@@ -18,15 +18,15 @@ jobs:
 
       - name: Setup SSH key
         run: |
-          echo "$EC2_KEY" > key.pem
-          chmod 400 key.pem
+          echo "$EC2_KEY" > ec2_key.pem
+          chmod 400 ec2_key.pem
         env:
           EC2_KEY: ${{ secrets.EC2_KEY }}
 
       - name: Get EC2 public IP from the repo variable
         id: tf_output
         run: |
-          echo "EC2_IP=${{ vars.EC2_HOST }}" >> $GITHUB_ENV
+          echo "EC2_HOST=${{ vars.EC2_HOST }}" >> $GITHUB_ENV
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
