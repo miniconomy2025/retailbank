@@ -34,10 +34,8 @@ jobs:
           dotnet-version: '8.0.x' 
       
       - name: Stop systemd service if its already running
-        run: |
-          if [ -f "/etc/systemd/system/retail-bank.service" ]; then
-          sudo systemctl stop retail-bank.service
-          fi
+        run: '[ -f "/etc/systemd/system/retail-bank.service" ] && sudo systemctl stop retail-bank.service'
+          
 
       - name: Build the api and move copy to the ec2
         working-directory: backend/RetailBank
