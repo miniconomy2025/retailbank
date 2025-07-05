@@ -1,4 +1,4 @@
-﻿namespace RetailBank.Models;
+﻿namespace RetailBank.Models.Ledger;
 
 /// <summary>
 /// TigerBeetle account IDs for types of internal accounts

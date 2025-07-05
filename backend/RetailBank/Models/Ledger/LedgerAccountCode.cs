@@ -1,12 +1,11 @@
-﻿namespace RetailBank.Models;
+﻿namespace RetailBank.Models.Ledger;
 
 /// <summary>
 /// TigerBeetle account code for types of internal accounts
 /// </summary>
 public enum LedgerAccountCode
 {
-    Bank = 1000,
-    Internal = 2000,
-    Transactional = 3000,
-    Loan = 4000,
+    Internal = 1000,
+    Transactional = 2000,
+    Loan = 3000,
 }
