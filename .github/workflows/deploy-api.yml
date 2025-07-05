@@ -22,22 +22,53 @@ jobs:
         env:
           EC2_KEY: ${{ secrets.EC2_KEY }}
 
-      - name: Deploy
+      - name: Get EC2 public IP from the repo variable
+        id: tf_output
         run: |
-          # Copy backend to EC2
-          scp -i key.pem -r ./backend/* ubuntu@${{ vars.EC2_HOST }}:~/api
+          echo "EC2_IP=${{ vars.EC2_HOST }}" >> $GITHUB_ENV
 
-          # Build and run on EC2
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ vars.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/api/RetailBank
-            
-            # Kill any existing process
-            pkill -f "dotnet.*RetailBank" || true
-            
-            # Build and run
-            dotnet restore
-            dotnet build --configuration Release
-            nohup dotnet run --configuration Release --urls "http://0.0.0.0:5000" > /home/ubuntu/api.log 2>&1 &
-            
-            echo "API deployed and running on port 5000"
-          EOF
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' 
+
+      - name: Build the api and move copy to the ec2
+        working-directory: backend/RetailBank
+        run: |
+            dotnet publish -c Release -r linux-x64 --self-contained true /p:PublishSingleFile=true
+            scp -o StrictHostKeyChecking=no -i ../../ec2_key.pem ./bin/Release/net9.0/linux-x64/publish/* ubuntu@$EC2_HOST:~/build 
+    
+      - name: Setup Node.js for frontend build
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies and build
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build 
+
+      - name: Copy frontend build result to EC2
+        run: |
+          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem ./frontend/dist/* ubuntu@$EC2_HOST:~/frontend-build
+
+      - name: Copy start.sh over
+        run: |
+          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem start.sh ubuntu@EC2_HOST:~/start.sh
+
+      - name: Copy tigerbeetle setup over
+        run: |
+          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem ./backend/setup-tigerbeetle.sh ubuntu@EC2_HOST:~/setup-tigerbeetle.sh
+      
+      - name: Run tigerbeetle setup
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_HOST << 'EOF'
+          bash ~/setup-tigerbeetle.sh
+      
+      - name: Run start script
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_HOST << 'EOF'
+          bash ~/start.sh
+
+      
