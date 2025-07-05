@@ -140,7 +140,7 @@ server {
 
 
     location / {
-        proxy_pass http://localhost:5000;  # Or your backend
+        proxy_pass http://localhost:5000;
     }
 }
 EOF
