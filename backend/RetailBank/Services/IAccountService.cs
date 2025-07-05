@@ -1,12 +1,11 @@
-using RetailBank.Models;
-using RetailBank.Models.Dtos;
+using RetailBank.Models.Ledger;
 
 namespace RetailBank.Services;
 
 public interface IAccountService
 {
-    public Task<ulong> CreateTransactionalAccount(ulong salary);
+    public Task<UInt128> CreateTransactionalAccount(ulong salary);
     public Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax);
-    public Task<LedgerAccount?> GetAccount(ulong accountId);
-    public Task<IEnumerable<TransferEvent>> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax, TransferSide side);
+    public Task<LedgerAccount?> GetAccount(UInt128 accountId);
+    public Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 accountId, uint limit, ulong timestampMax, TransferSide? side);
 }

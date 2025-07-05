@@ -1,11 +1,10 @@
 using RetailBank.Services;
 using CliWrap;
 using CliWrap.Buffered;
-using RetailBank.Models;
 using RetailBank.Repositories;
 using TigerBeetle;
-using RetailBank.Extensions;
 using RetailBank.Exceptions;
+using RetailBank.Models.Ledger;
 
 namespace RetailBank.Endpoints;
 
@@ -46,7 +45,7 @@ public static class SimulationEndpoints
         {
             try
             {
-                await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Bank);
+                await ledgerRepository.CreateAccount((ulong)variant, LedgerAccountCode.Internal);
             }
             catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
         }
@@ -60,12 +59,12 @@ public static class SimulationEndpoints
             catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
         }
 
-        var mainAccount = (await ledgerRepository.GetAccount((ulong)BankId.Retail).ConfigureAwait(false)).Value;
+        var mainAccount = await ledgerRepository.GetAccount((ulong)BankId.Retail).ConfigureAwait(false);
 
-        if (mainAccount.BalancePosted() == 0)
+        if (mainAccount?.BalancePosted == 0)
         {
             // seed initial funds
-            await ledgerRepository.Transfer(new LedgerTransfer((ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
+            await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
         }
 
         return Results.NoContent();

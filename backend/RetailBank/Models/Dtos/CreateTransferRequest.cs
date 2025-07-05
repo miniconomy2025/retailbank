@@ -1,7 +1,8 @@
 ﻿namespace RetailBank.Models.Dtos;
 
 public record CreateTransferRequest(
-    ulong From,
-    ulong To,
-    UInt128 AmountCents
+    string From,
+    string To,
+    UInt128 AmountCents,
+    ulong? Reference
 );

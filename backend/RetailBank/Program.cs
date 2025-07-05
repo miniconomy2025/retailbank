@@ -5,6 +5,7 @@ using RetailBank.Services;
 using RetailBank;
 using RetailBank.Repositories;
 using RetailBank.ExceptionHandlers;
+using RetailBank.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,7 @@ builder.Services
     .AddSingleton<ILedgerRepository, TigerBeetleRepository>()
     .AddHostedService<SimulationRunner>()
     .AddServices()
+    .AddValidators()
     .AddExceptionHandlers();
 
 var app = builder.Build();

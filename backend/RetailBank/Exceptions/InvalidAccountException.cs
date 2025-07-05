@@ -1,4 +1,4 @@
-﻿using RetailBank.Models;
+﻿using RetailBank.Models.Ledger;
 
 namespace RetailBank.Exceptions;
 

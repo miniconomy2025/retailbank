@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using RetailBank.Models;
 using RetailBank.Models.Dtos;
+using RetailBank.Models.Ledger;
 using RetailBank.Services;
 
 namespace RetailBank.Endpoints;
@@ -23,7 +23,7 @@ public static class AccountEndpoints
 
         routes
             .MapGet("/accounts", GetAccounts)
-            .Produces<IEnumerable<LedgerAccount>>(StatusCodes.Status200OK)
+            .Produces<IEnumerable<AccountDto>>(StatusCodes.Status200OK)
             .WithSummary("Get All Accounts")
             .WithDescription(
                 """
@@ -43,7 +43,7 @@ public static class AccountEndpoints
 
         routes
             .MapGet("/accounts/{id:long}", GetAccount)
-            .Produces<LedgerAccount>(StatusCodes.Status200OK)
+            .Produces<AccountDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .WithSummary("Get An Account")
             .WithDescription(
@@ -62,7 +62,7 @@ public static class AccountEndpoints
 
         routes
             .MapGet("/accounts/{id:long}/transfers", GetAccountTransfers)
-            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK)
+            .Produces<CursorPagination<TransferDto>>(StatusCodes.Status200OK)
             .WithSummary("Get An Account's Transfers")
             .WithDescription(
                 """
@@ -83,7 +83,7 @@ public static class AccountEndpoints
     {
         var accountId = await accountService.CreateTransactionalAccount(request.SalaryCents);
 
-        return Results.Ok(new CreateAccountResponse(accountId));
+        return Results.Ok(new CreateAccountResponse(accountId.ToString()));
     }
 
     public static async Task<IResult> GetAccounts(
@@ -94,16 +94,17 @@ public static class AccountEndpoints
         [FromQuery] ulong timestampMax = 0
     )
     {
-        var accounts = (await accountService.GetAccounts(accountType, limit, timestampMax)).ToArray();
+        var accounts = (await accountService.GetAccounts(accountType, limit, timestampMax))
+            .Select(account => new AccountDto(account));
 
         string? nextUri = null;
-        if (accounts.Length > 0 && httpContext.Request.Path.HasValue)
+        if (accounts.Count() > 0 && httpContext.Request.Path.HasValue)
         {
-            var newMax = accounts[accounts.Length - 1].CreatedAt - 1;
+            var newMax = accounts.Last().CreatedAt - 1;
             nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
         }
 
-        var pagination = new CursorPagination<LedgerAccount>(accounts, nextUri);
+        var pagination = new CursorPagination<AccountDto>(accounts, nextUri);
 
         return Results.Ok(pagination);
     }
@@ -119,7 +120,7 @@ public static class AccountEndpoints
         if (account == null)
             return Results.NotFound();
 
-        return Results.Ok(account);
+        return Results.Ok(new AccountDto(account));
     }
 
     public static async Task<IResult> GetAccountTransfers(
@@ -128,19 +129,20 @@ public static class AccountEndpoints
         IAccountService accountService,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong timestampMax = 0,
-        [FromQuery] TransferSide side = TransferSide.Any
+        [FromQuery] TransferSide? side = null
     )
     {
-        var transfers = (await accountService.GetAccountTransfers(id, limit, timestampMax, side)).ToArray();
+        var transfers = (await accountService.GetAccountTransfers(id, limit, timestampMax, side))
+            .Select(transfer => new TransferDto(transfer));
             
         string? nextUri = null;
-        if (transfers.Length > 0 && httpContext.Request.Path.HasValue)
+        if (transfers.Count() > 0 && httpContext.Request.Path.HasValue)
         {
-            var newMax = transfers[transfers.Length - 1].Timestamp - 1;
+            var newMax = transfers.Last().Timestamp - 1;
             nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
         }
 
-        var pagination = new CursorPagination<TransferEvent>(transfers, nextUri);
+        var pagination = new CursorPagination<TransferDto>(transfers, nextUri);
 
         return Results.Ok(pagination);
     }
