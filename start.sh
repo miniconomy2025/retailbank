@@ -109,13 +109,13 @@ server {
         limit_except GET {
             deny all;
         }
-        rewrite ^/api/(.*)$ /$1 break;
+        rewrite ^/api/(.*)$ /\$1 break;
         proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Origin $http_origin;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Origin \$http_origin;
         proxy_buffering off;
     }
 
