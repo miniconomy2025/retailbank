@@ -89,7 +89,9 @@ API_DOMAIN="retail-bank-api.pastpaperportal.co.za"
 EMAIL="admin@$FE_DOMAIN" 
 NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
 NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
-FRONTEND_APP_DIR="/home/ubuntu/frontend-build"
+FRONTEND_APP_DIR="/var/www/retail-bank"
+
+mv /home/ubuntu/frontend-build/* /var/www/retail-bank/
 
 echo "Installing nginx and certbot..."
 sudo apt update
