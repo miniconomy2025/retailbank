@@ -37,7 +37,7 @@ jobs:
         working-directory: backend/RetailBank
         run: |
             dotnet publish -c Release -r linux-x64 --self-contained true /p:PublishSingleFile=true
-            scp -o StrictHostKeyChecking=no -i ../../ec2_key.pem ./bin/Release/net9.0/linux-x64/publish/* ubuntu@$EC2_HOST:~/build 
+            scp -o StrictHostKeyChecking=no -i ../../ec2_key.pem ./bin/Release/net8.0/linux-x64/publish/* ubuntu@$EC2_HOST:~/build 
     
       - name: Setup Node.js for frontend build
         uses: actions/setup-node@v3
