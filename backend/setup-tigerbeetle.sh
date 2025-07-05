@@ -14,6 +14,8 @@ ACCOUNT_CODE=1000
 mkdir -p "$TB_DIR"
 cd "$TB_DIR"
 
+sudo apt update && sudo apt install unzip
+
 if [ ! -f "$TB_BIN" ]; then
     echo "Downloading TigerBeetle v$VERSION..."
     curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip -o tigerbeetle.zip
