@@ -14,9 +14,6 @@ else
   sudo ./aws/install --update
 fi
 
-# clean up crap
-rm awscliv2.zip
-
 # Pull the secrets using the aws cli
 aws secretsmanager get-secret-value \
   --secret-id server-cert \
