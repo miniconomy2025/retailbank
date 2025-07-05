@@ -15,8 +15,7 @@ else
 fi
 
 # clean up crap
-rm awscliv2.zip && rm flyway-commandline-10.11.0-linux-x64.tar.gz
-
+rm awscliv2.zip
 
 # Pull the secrets using the aws cli
 aws secretsmanager get-secret-value \
