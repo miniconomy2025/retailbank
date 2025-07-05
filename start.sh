@@ -86,9 +86,9 @@ set -e
 FE_DOMAIN="retail-bank.pastpaperportal.co.za"
 API_DOMAIN="retail-bank-api.pastpaperportal.co.za"
 
-EMAIL="admin@$DOMAIN" 
-NGINX_CONF="/etc/nginx/sites-available/$DOMAIN"
-NGINX_LINK="/etc/nginx/sites-enabled/$DOMAIN"
+EMAIL="admin@$FE_DOMAIN" 
+NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
+NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
 FRONTEND_APP_DIR="/home/ubuntu/frontend-build"
 
 echo "Installing nginx and certbot..."
