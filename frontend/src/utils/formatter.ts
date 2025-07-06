@@ -1,9 +1,7 @@
-export function formatCurrency(value: number | undefined) {
-  const val = value ?? 0;
-
+export function formatCurrency(value: number) {
   return (
     "Đ " +
-    (val/100)
+    (value/100)
       .toFixed(2)
       .replace(/\B(?=(\d{3})+(?!\d))/g, " ")
   );

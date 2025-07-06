@@ -30,20 +30,20 @@ export default function TransferPage() {
           <CardContent>
             <div className="text-center">
               <div className="text-3xl font-bold mb-2">
-                {formatCurrency(transfer?.amount)}
+                {formatCurrency(transfer?.amount ?? 0)}
               </div>
             </div>
             <div>
               <div className="flex items-center justify-center w-full py-2">
                 <div>
                   <p className="font-medium">From Account</p>
-                  <p>{transfer?.debitAccountNumber}</p>
+                  <p>{transfer?.debitAccountId}</p>
                 </div>
               </div>
               <div className="flex items-center justify-center w-full py-2">
                 <div>
                   <p className="font-medium">To Account</p>
-                  <p>{transfer?.creditAccountNumber}</p>
+                  <p>{transfer?.creditAccountId}</p>
                 </div>
               </div>
             </div>
@@ -53,8 +53,8 @@ export default function TransferPage() {
                 <div className="flex items-center justify-between">
                   <span>Pending ID</span>
                   <div>
-                    {transfer?.pendingId ? (
-                      <span>{transfer?.pendingId}</span>
+                    {transfer?.parentId ? (
+                      <span>{transfer?.parentId}</span>
                     ) : (
                       <span>N/A</span>
                     )}
@@ -63,7 +63,7 @@ export default function TransferPage() {
 
                 <div className="flex items-center justify-between">
                   <span>Status</span>
-                  <div>{transfer?.eventType}</div>
+                  <div>{transfer?.transferType}</div>
                 </div>
               </div>
             </div>

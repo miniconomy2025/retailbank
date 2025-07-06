@@ -107,27 +107,27 @@ export default function Transfers() {
                 </TableHeader>
                 <TableBody>
                   {transfers?.map((transfer) => (
-                    <TableRow key={transfer.transactionId + transfer.timestamp}>
+                    <TableRow key={transfer.transferId + transfer.timestamp}>
                       <TableCell className="text-left">
-                        {transfer.transactionId}
+                        {transfer.transferId}
                       </TableCell>
                       <TableCell className="text-left">
-                        {transfer.debitAccountNumber}
+                        {transfer.debitAccountId}
                       </TableCell>
                       <TableCell className="text-left">
-                        {transfer.creditAccountNumber}
+                        {transfer.creditAccountId}
                       </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(transfer.amount)}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge>{transfer.eventType}</Badge>
+                        <Badge>{transfer.transferType}</Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <Eye
                           className="h-6 w-6 cursor-pointer"
                           onClick={() =>
-                            navigate(`/transfers/${transfer?.transactionId}`)
+                            navigate(`/transfers/${transfer?.transferId ?? "0"}`)
                           }
                         />
                       </TableCell>

@@ -1,24 +1,19 @@
 export interface Account {
-  id: number;
+  id: string;
   accountType: LedgerAccountType;
   debitsPending: number;
   debitsPosted: number;
   creditsPending: number;
   creditsPosted: number;
-  closed: boolean;
-  createdAt?: number;
   balancePending: number;
   balancePosted: number;
+  closed: boolean;
+  createdAt: number;
 }
 
 export interface AccountPage {
   items: Account[];
-  next?: string | null;
+  next?: string;
 }
 
-enum LedgerAccountType {
-  BANK = "Bank",
-  INTERNAL = "Internal",
-  TRANSACTIONAL = "Transactional",
-  LOAN = "Loan",
-}
+export type LedgerAccountType = "Internal" | "Transactional" | "Loan";
