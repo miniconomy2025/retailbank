@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Account() {
   const { accountId: accountIdString } = useParams();
-  const accountId = Number(accountIdString ?? 0);
+  const accountId = accountIdString ?? "0";
 
   const {
     data: account,
@@ -28,7 +28,7 @@ export default function Account() {
     error: accountError,
   } = useQuery<Account>({
     queryKey: [`account-${accountId}`],
-    queryFn: () => getAccount(Number(accountId ?? 0)),
+    queryFn: () => getAccount(accountId),
     retry: false,
   });
 
@@ -69,7 +69,7 @@ export default function Account() {
   const transfers = data?.pages.flatMap((page) => page.items) ?? [];
 
   const isDebit = (transfer: Transfer) =>
-    transfer.debitAccountNumber === accountId;
+    transfer.debitAccountId === accountId;
 
   return (
     <PageWrapper
@@ -88,7 +88,7 @@ export default function Account() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {formatCurrency(account?.balancePosted)}
+                {formatCurrency(account?.balancePosted ?? 0)}
               </div>
             </CardContent>
           </Card>
@@ -98,7 +98,7 @@ export default function Account() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {formatCurrency(account?.balancePending)}
+                {formatCurrency(account?.balancePending ?? 0)}
               </div>
             </CardContent>
           </Card>
@@ -108,7 +108,7 @@ export default function Account() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {formatCurrency(account?.debitsPosted)}
+                {formatCurrency(account?.debitsPosted ?? 0)}
               </div>
             </CardContent>
           </Card>
@@ -118,7 +118,7 @@ export default function Account() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {formatCurrency(account?.creditsPending)}
+                {formatCurrency(account?.creditsPending ?? 0)}
               </div>
             </CardContent>
           </Card>
@@ -143,9 +143,9 @@ export default function Account() {
                 </TableHeader>
                 <TableBody>
                   {transfers?.map((transfer) => (
-                    <TableRow key={transfer.transactionId + transfer.timestamp}>
+                    <TableRow key={transfer.transferId + transfer.timestamp}>
                       <TableCell className="text-left">
-                        {transfer.transactionId}
+                        {transfer.transferId}
                       </TableCell>
                       <TableCell className="text-left">
                         <div className="flex items-center gap-1">
@@ -163,16 +163,16 @@ export default function Account() {
                         </div>
                       </TableCell>
                       <TableCell className="text-left">
-                        {transfer.debitAccountNumber}
+                        {transfer.debitAccountId}
                       </TableCell>
                       <TableCell className="text-left">
-                        {transfer.creditAccountNumber}
+                        {transfer.creditAccountId}
                       </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(transfer.amount)}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge>{transfer.eventType}</Badge>
+                        <Badge>{transfer.transferType}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}

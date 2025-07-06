@@ -11,7 +11,7 @@ public record LedgerTransfer(
     UInt128 Amount,
     UInt128? ParentId = null,
     ulong Timestamp = 0,
-    TransferAction Action = TransferAction.Transfer,
+    TransferType TransferType = TransferType.Transfer,
     ulong? Reference = null
 )
 {
@@ -62,7 +62,7 @@ public record LedgerTransfer(
             Ledger = TigerBeetleRepository.LedgerId,
             Code = TigerBeetleRepository.TransferCode,
             PendingId = ParentId ?? 0,
-            Flags = Action.ToTransferFlags() | linkedFlag,
+            Flags = TransferType.ToTransferFlags() | linkedFlag,
         };
     }
 }

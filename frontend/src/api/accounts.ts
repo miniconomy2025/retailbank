@@ -16,7 +16,7 @@ export async function getAccounts(
   return await response.json();
 }
 
-export async function getAccount(accountId: number): Promise<Account> {
+export async function getAccount(accountId: string): Promise<Account> {
   const response = await apiFetch({
     path: `/accounts/${accountId}`,
     method: "GET",
@@ -29,7 +29,7 @@ export async function getAccount(accountId: number): Promise<Account> {
 }
 
 export async function getAccountTransfers(
-  accountId: number,
+  accountId: string,
   nextUrl?: string
 ): Promise<TransferPage> {
   const response = await apiFetch({

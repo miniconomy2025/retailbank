@@ -2,7 +2,7 @@
 
 namespace RetailBank.Models.Ledger;
 
-public enum TransferAction
+public enum TransferType
 {
     Transfer = 0,
     StartTransfer = 2,
@@ -16,13 +16,13 @@ public enum TransferAction
 
 public static class TransferActionExt
 {
-    public static TransferFlags ToTransferFlags(this TransferAction transferType)
+    public static TransferFlags ToTransferFlags(this TransferType transferType)
     {
         return (TransferFlags)transferType;
     }
 
-    public static TransferAction ToTransferKind(this TransferFlags flags)
+    public static TransferType ToTransferKind(this TransferFlags flags)
     {
-        return (TransferAction)flags;
+        return (TransferType)flags;
     }
 }

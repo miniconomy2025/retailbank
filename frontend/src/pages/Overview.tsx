@@ -13,7 +13,7 @@ export default function Overview() {
     error: retailErr,
   } = useQuery<Account>({
     queryKey: [`account-${1000}`],
-    queryFn: () => getAccount(1000),
+    queryFn: () => getAccount("1000"),
     retry: false,
   });
 
@@ -23,7 +23,7 @@ export default function Overview() {
     error: ownersEquityErr,
   } = useQuery<Account>({
     queryKey: [`account-${1001}`],
-    queryFn: () => getAccount(1001),
+    queryFn: () => getAccount("1001"),
     retry: false,
   });
 
@@ -33,7 +33,7 @@ export default function Overview() {
     error: interestIncomeErr,
   } = useQuery<Account>({
     queryKey: [`account-${1002}`],
-    queryFn: () => getAccount(1002),
+    queryFn: () => getAccount("1002"),
     retry: false,
   });
 
@@ -43,7 +43,7 @@ export default function Overview() {
     error: loanControlErr,
   } = useQuery<Account>({
     queryKey: [`account-${1003}`],
-    queryFn: () => getAccount(1003),
+    queryFn: () => getAccount("1003"),
     retry: false,
   });
 
@@ -53,7 +53,7 @@ export default function Overview() {
     error: badDebtsErr,
   } = useQuery<Account>({
     queryKey: [`account-${1004}`],
-    queryFn: () => getAccount(1004),
+    queryFn: () => getAccount("1004"),
     retry: false,
   });
 
@@ -63,7 +63,7 @@ export default function Overview() {
     error: commercialBankErr,
   } = useQuery<Account>({
     queryKey: [`account-${2000}`],
-    queryFn: () => getAccount(2000),
+    queryFn: () => getAccount("2000"),
     retry: false,
   });
 
@@ -89,19 +89,19 @@ export default function Overview() {
       <div className="h-full flex flex-col gap-4">
         <h1 className="text-3xl font-bold text-left">Notable Accounts</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <AccountCard title="Retail Bank" account={retailAcc} />
-          <AccountCard title="Owner’s Equity" account={ownersEquityAcc} />
-          <AccountCard title="Interest Income" account={interestIncomeAcc} />
-          <AccountCard title="Loan Control" account={loanControlAcc} />
-          <AccountCard title="Bad Debts" account={badDebtsAcc} />
-          <AccountCard title="Commercial Bank" account={commercialBankAcc} />
+          {retailAcc && <AccountCard title="Retail Bank" account={retailAcc} />}
+          {ownersEquityAcc && <AccountCard title="Owner’s Equity" account={ownersEquityAcc} />}
+          {interestIncomeAcc && <AccountCard title="Interest Income" account={interestIncomeAcc} />}
+          {loanControlAcc && <AccountCard title="Loan Control" account={loanControlAcc} />}
+          {badDebtsAcc && <AccountCard title="Bad Debts" account={badDebtsAcc} />}
+          {commercialBankAcc && <AccountCard title="Commercial Bank" account={commercialBankAcc} />}
         </div>
       </div>
     </PageWrapper>
   );
 }
 
-function AccountCard({ title, account }: { title: string; account?: Account }) {
+function AccountCard({ title, account }: { title: string; account: Account }) {
   const navigate = useNavigate();
 
   return (
@@ -114,10 +114,10 @@ function AccountCard({ title, account }: { title: string; account?: Account }) {
       </CardHeader>
       <CardContent>
         <div className="text-xl font-bold">
-          Balance: {formatCurrency(account?.balancePosted)}
+          Balance: {formatCurrency(account.balancePosted)}
         </div>
         <p className="text-s">
-          Pending: {formatCurrency(account?.balancePending)}
+          Pending: {formatCurrency(account.balancePending)}
         </p>
       </CardContent>
     </Card>
