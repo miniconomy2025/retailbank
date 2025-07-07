@@ -83,8 +83,8 @@ sudo systemctl status "$SERVICE_NAME" --no-pager
 echo "Setting up nginx and https"
 
 set -e
-FE_DOMAIN="retail-bank.pastpaperportal.co.za"
-API_DOMAIN="retail-bank-api.pastpaperportal.co.za"
+FE_DOMAIN="retail-bank.projects.bbdgrad.com"
+API_DOMAIN="retail-bank-api.projects.bbdgrad.com"
 
 EMAIL="admin@$FE_DOMAIN" 
 NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
