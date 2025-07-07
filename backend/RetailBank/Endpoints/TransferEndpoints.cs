@@ -1,6 +1,8 @@
 ﻿using System.Globalization;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using RetailBank.Exceptions;
+using RetailBank.Extensions;
 using RetailBank.Models.Dtos;
 using RetailBank.Services;
 using TigerBeetle;
@@ -30,7 +32,7 @@ public static class TransferEndpoints
 
         routes
             .MapGet("/transfers", GetTransfers)
-            .Produces<CursorPagination<TransferEvent>>(StatusCodes.Status200OK)
+            .Produces<CursorPagination<TransferDto>>(StatusCodes.Status200OK)
             .WithSummary("Get All Transfers")
             .WithDescription(
                 """
@@ -42,7 +44,7 @@ public static class TransferEndpoints
 
         routes
             .MapGet("/transfers/{id}", GetTransfer)
-            .Produces<TransferEvent>(StatusCodes.Status200OK)
+            .Produces<TransferDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get A Transfer")
             .WithDescription(
@@ -57,13 +59,19 @@ public static class TransferEndpoints
     public static async Task<IResult> CreateTransfer(
         CreateTransferRequest request,
         ITransferService transactionService,
-        ILogger<TransferService> logger
+        ILogger<TransferService> logger,
+        IValidator<CreateTransferRequest> validator
     )
     {
+        validator.ValidateAndThrow(request);
+        
+        var fromAccount = UInt128.Parse(request.From);
+        var toAccount = UInt128.Parse(request.To);
+        
         try
         {
-            var id = await transactionService.Transfer(request.From, request.To, request.AmountCents);
-            return Results.Ok(new CreateTransferResponse(id.ToString("X")));
+            var id = await transactionService.Transfer(fromAccount, toAccount, request.AmountCents, request.Reference);
+            return Results.Ok(new CreateTransferResponse(id.ToHex()));
         }
         catch (TigerBeetleResultException<CreateTransferResult> ex)
         {
@@ -89,16 +97,17 @@ public static class TransferEndpoints
         [FromQuery] ulong timestampMax = 0
     )
     {
-        var transfers = (await transferService.GetTransfers(limit, timestampMax)).ToArray();
+        var transfers = (await transferService.GetTransfers(limit, timestampMax))
+            .Select(transfer => new TransferDto(transfer));
 
         string? nextUri = null;
-        if (transfers.Length > 0 && httpContext.Request.Path.HasValue)
+        if (transfers.Count() > 0 && httpContext.Request.Path.HasValue)
         {
-            var newMax = transfers[transfers.Length - 1].Timestamp - 1;
+            var newMax = transfers.Last().Timestamp - 1;
             nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
         }
 
-        var pagination = new CursorPagination<TransferEvent>(transfers, nextUri);
+        var pagination = new CursorPagination<TransferDto>(transfers, nextUri);
 
         return Results.Ok(pagination);
     }
@@ -114,6 +123,6 @@ public static class TransferEndpoints
         if (transfer == null)
             return Results.NotFound();
         
-        return Results.Ok(transfer);
+        return Results.Ok(new TransferDto(transfer));
     }
 }

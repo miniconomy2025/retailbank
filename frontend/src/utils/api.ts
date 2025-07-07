@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5173";
+const API_BASE_URL = "https://retail-bank.projects.bbdgrad.com/api";
 
 type Props = {
   method: string;
@@ -6,7 +6,6 @@ type Props = {
   body?: string;
 };
 
-// TODO: Add whatever auth we go with here
 export const apiFetch = async ({
   path,
   method,

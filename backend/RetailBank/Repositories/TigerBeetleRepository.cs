@@ -1,6 +1,5 @@
 using RetailBank.Exceptions;
-using RetailBank.Models;
-using RetailBank.Models.Dtos;
+using RetailBank.Models.Ledger;
 using RetailBank.Services;
 using TigerBeetle;
 
@@ -11,31 +10,15 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
     public const uint LedgerId = 1;
     public const ushort TransferCode = 1;
 
-    public async Task CreateAccount(
-        UInt128 accountId,
-        LedgerAccountCode code,
-        AccountFlags flags,
-        UInt128 userData128,
-        ulong userData64,
-        uint userData32
-    )
+    public async Task CreateAccount(LedgerAccount account)
     {
-        var result = await tbClientProvider.Client.CreateAccountAsync(new Account
-        {
-            Id = accountId,
-            Code = (ushort)code,
-            UserData128 = userData128,
-            UserData64 = userData64,
-            UserData32 = userData32,
-            Ledger = LedgerId,
-            Flags = flags,
-        });
+        var result = await tbClientProvider.Client.CreateAccountAsync(account.ToAccount());
 
         if (result != CreateAccountResult.Ok)
             throw new TigerBeetleResultException<CreateAccountResult>(result);
     }
 
-    public async Task<Account[]> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax)
     {
         var filter = new QueryFilter();
         filter.Limit = limit;
@@ -45,46 +28,59 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         if (code.HasValue)
             filter.Code = (ushort)code.Value;
 
-        var accounts = await tbClientProvider.Client.QueryAccountsAsync(filter);
+        var accounts = (await tbClientProvider.Client.QueryAccountsAsync(filter))
+            .Select(account => new LedgerAccount(account));
         return accounts;
     }
 
-    public async Task<Account?> GetAccount(UInt128 accountId)
+    public async Task<LedgerAccount?> GetAccount(UInt128 accountId)
     {
-        return await tbClientProvider.Client.LookupAccountAsync(accountId);
+        var account = await tbClientProvider.Client.LookupAccountAsync(accountId);
+        
+        if (!account.HasValue)
+            return null;
+        
+        return new LedgerAccount(account.Value);
     }
 
-    public async Task<Transfer[]> GetAccountTransfers(UInt128 id, uint limit, ulong timestampMax, TransferSide side)
+    public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 id, uint limit, ulong timestampMax, TransferSide? side)
     {
         var filter = new AccountFilter();
         filter.AccountId = id;
         filter.Limit = limit;
         filter.TimestampMax = timestampMax;
-        filter.Flags = side.ToAccountFilterFlags() | AccountFilterFlags.Reversed;
+        filter.Flags = (side?.ToAccountFilterFlags() ?? AccountFilterFlags.None) | AccountFilterFlags.Reversed;
 
-        var transfers = await tbClientProvider.Client.GetAccountTransfersAsync(filter);
+        var transfers = (await tbClientProvider.Client.GetAccountTransfersAsync(filter))
+            .Select(transfer => new LedgerTransfer(transfer));
         return transfers;
     }
 
-    public async Task<Transfer[]> GetTransfers(uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerTransfer>> GetTransfers(uint limit, ulong timestampMax)
     {
         var filter = new QueryFilter();
         filter.Limit = limit;
         filter.TimestampMax = timestampMax;
         filter.Flags = QueryFilterFlags.Reversed;
 
-        var transfers = await tbClientProvider.Client.QueryTransfersAsync(filter);
+        var transfers = (await tbClientProvider.Client.QueryTransfersAsync(filter))
+            .Select(transfer => new LedgerTransfer(transfer));
         return transfers;
     }
 
-    public async Task<Transfer?> GetTransfer(UInt128 id)
+    public async Task<LedgerTransfer?> GetTransfer(UInt128 id)
     {
-        return await tbClientProvider.Client.LookupTransferAsync(id);
+        var transfer = await tbClientProvider.Client.LookupTransferAsync(id);
+
+        if (!transfer.HasValue)
+            return null;
+
+        return new LedgerTransfer(transfer.Value);
     }
 
-    public async Task<UInt128> Transfer(LedgerTransfer simpleTransfer)
+    public async Task<UInt128> Transfer(LedgerTransfer ledgerTransfer)
     {
-        var transfer = simpleTransfer.ToTransfer();
+        var transfer = ledgerTransfer.ToTransfer(false);
         var transferResult = await tbClientProvider.Client.CreateTransferAsync(transfer);
 
         if (transferResult != CreateTransferResult.Ok)
@@ -93,51 +89,14 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         return transfer.Id;
     }
 
-    public async Task<IEnumerable<UInt128>> TransferLinked(IEnumerable<LedgerTransfer> simpleTransfers)
+    public async Task<IEnumerable<UInt128>> TransferLinked(IEnumerable<LedgerTransfer> ledgerTransfers)
     {
-        var length = simpleTransfers.Count();
-        var transfers = simpleTransfers.Select((transfer, index) => transfer.ToTransfer(
-            index < length - 1 ? TransferFlags.Linked : TransferFlags.None
-        ));
+        var length = ledgerTransfers.Count();
+        var transfers = ledgerTransfers.Select((transfer, index) => transfer.ToTransfer(index < length - 1));
 
         await TransferBatch(transfers.ToArray());
 
         return transfers.Select(transfer => transfer.Id);
-    }
-
-    public async Task<UInt128> StartTransfer(LedgerTransfer simpleTransfer)
-    {
-        var transfer = simpleTransfer.ToTransfer(TransferFlags.Pending);
-        var result = await tbClientProvider.Client.CreateTransferAsync(transfer);
-
-        if (result != CreateTransferResult.Ok)
-            throw new TigerBeetleResultException<CreateTransferResult>(result);
-
-        return transfer.Id;
-    }
-
-    public async Task<UInt128> PostPendingTransfer(UInt128 pendingId, LedgerTransfer simpleTransfer)
-    {
-        var transfer = simpleTransfer.ToTransfer(TransferFlags.PostPendingTransfer, pendingId);
-
-        var result = await tbClientProvider.Client.CreateTransferAsync(transfer);
-
-        if (result != CreateTransferResult.Ok)
-            throw new TigerBeetleResultException<CreateTransferResult>(result);
-
-        return transfer.Id;
-    }
-
-    public async Task<UInt128> VoidPendingTransfer(UInt128 pendingId, LedgerTransfer simpleTransfer)
-    {
-        var transfer = simpleTransfer.ToTransfer(TransferFlags.VoidPendingTransfer, pendingId);
-
-        var result = await tbClientProvider.Client.CreateTransferAsync(transfer);
-
-        if (result != CreateTransferResult.Ok)
-            throw new TigerBeetleResultException<CreateTransferResult>(result);
-
-        return transfer.Id;
     }
 
     public async Task<(UInt128, UInt128)> BalanceAndCloseCredit(UInt128 debitAccountId, UInt128 creditAccountId)
@@ -180,7 +139,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         ThrowBatchError(results);
     }
 
-    // Find most useful error in for linked transfers
+    // Find most useful error in for batch of transfers
     private void ThrowBatchError(CreateTransfersResult[] results)
     {
         if (results.Length == 0)

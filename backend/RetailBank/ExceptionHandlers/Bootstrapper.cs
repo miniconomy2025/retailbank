@@ -8,6 +8,7 @@ public static class Bootstrapper
 
         services
             .AddExceptionHandler<BadHttpRequestExceptionHandler>()
+            .AddExceptionHandler<ValidationExceptionHandler>()
             .AddExceptionHandler<UserExceptionHandler>()
             .AddExceptionHandler<ExceptionHandler>();
 

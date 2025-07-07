@@ -3,6 +3,6 @@
 public enum NotificationResult
 {
     Succeeded,
+    Rejected,
     Failed,
-    NetworkFailure,
 }

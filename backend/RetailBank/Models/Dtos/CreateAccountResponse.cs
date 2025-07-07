@@ -1,3 +1,3 @@
 ﻿namespace RetailBank.Models.Dtos;
 
-public record CreateAccountResponse(ulong AccountId);
+public record CreateAccountResponse(string AccountId);

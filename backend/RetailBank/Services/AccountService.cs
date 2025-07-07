@@ -1,47 +1,33 @@
 using System.Security.Cryptography;
-using RetailBank.Models;
-using RetailBank.Models.Dtos;
+using RetailBank.Models.Ledger;
 using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
-public class AccountService(ILedgerRepository ledgerRepository, ITransferService transferService) : IAccountService
+public class AccountService(ILedgerRepository ledgerRepository) : IAccountService
 {
-    public async Task<ulong> CreateTransactionalAccount(ulong salary)
+    public async Task<UInt128> CreateTransactionalAccount(ulong salary)
     {
         var id = GenerateTransactionalAccountNumber();
 
-        await ledgerRepository.CreateAccount(
-            id,
-            LedgerAccountCode.Transactional,
-            TigerBeetle.AccountFlags.DebitsMustNotExceedCredits,
-            0,
-            salary
-        );
+        await ledgerRepository.CreateAccount(new LedgerAccount(id, LedgerAccountType.Transactional, new DebitOrder((ulong)BankId.Retail, salary)));
 
         return id;
     }
 
-    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountCode? code, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax)
     {
-        return (await ledgerRepository.GetAccounts(code, limit, timestampMax)).Select(account => new LedgerAccount(account));
+        return await ledgerRepository.GetAccounts(code, limit, timestampMax);
     }
 
-    public async Task<LedgerAccount?> GetAccount(ulong accountId)
+    public async Task<LedgerAccount?> GetAccount(UInt128 accountId)
     {
-        var account = await ledgerRepository.GetAccount(accountId);
-
-        if (account.HasValue)
-            return new LedgerAccount(account.Value);
-        else
-            return null;
+        return await ledgerRepository.GetAccount(accountId);
     }
 
-    public async Task<IEnumerable<TransferEvent>> GetAccountTransfers(ulong accountId, uint limit, ulong timestampMax, TransferSide side)
+    public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 accountId, uint limit, ulong timestampMax, TransferSide? side)
     {
-        var transfers = await ledgerRepository.GetAccountTransfers(accountId, limit, timestampMax, side);
-
-        return await Task.WhenAll(transfers.Select(async transfer => new TransferEvent(transfer, await TransferEvent.MapEventType(transfer, transferService))));
+        return await ledgerRepository.GetAccountTransfers(accountId, limit, timestampMax, side);
     }
 
     // 12 digits starting with "1000"

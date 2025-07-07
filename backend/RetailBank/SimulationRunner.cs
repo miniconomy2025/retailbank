@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 using RetailBank.Exceptions;
-using RetailBank.Models;
+using RetailBank.Models.Ledger;
 using RetailBank.Models.Options;
 using RetailBank.Services;
 using TigerBeetle;
@@ -53,7 +53,7 @@ public class SimulationRunner(
 
         // Pay Salaries
 
-        var transactionalAccounts = await accountService.GetAccounts(LedgerAccountCode.Transactional, BatchSize, 0);
+        var transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, 0);
 
         while (transactionalAccounts.Count() > 0)
         {
@@ -74,14 +74,14 @@ public class SimulationRunner(
                 }
             }
             
-            transactionalAccounts = await accountService.GetAccounts(LedgerAccountCode.Transactional, BatchSize, transactionalAccounts.Last().CreatedAt - 1);
+            transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, transactionalAccounts.Last().Timestamp - 1);
         }
 
         TimeSpan.FromSeconds(options.Value.Period / 2);
 
         // Charge Interest & Pay Installments
 
-        var loanAccounts = await accountService.GetAccounts(LedgerAccountCode.Loan, BatchSize, 0);
+        var loanAccounts = await accountService.GetAccounts(LedgerAccountType.Loan, BatchSize, 0);
 
         while (loanAccounts.Count() > 0)
         {
@@ -113,7 +113,7 @@ public class SimulationRunner(
                 }
             }
 
-            loanAccounts = await accountService.GetAccounts(LedgerAccountCode.Loan, BatchSize, loanAccounts.Last().CreatedAt - 1);
+            loanAccounts = await accountService.GetAccounts(LedgerAccountType.Loan, BatchSize, loanAccounts.Last().Timestamp - 1);
         }
     }
 }

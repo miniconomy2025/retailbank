@@ -1,4 +1,5 @@
-﻿using RetailBank.Models.Dtos;
+﻿using FluentValidation;
+using RetailBank.Models.Dtos;
 using RetailBank.Services;
 
 namespace RetailBank.Endpoints;
@@ -27,11 +28,15 @@ public static class LoanEndpoints
 
     public static async Task<IResult> CreateLoanAccount(
         CreateLoanAccountRequest request,
-        ILoanService loanService
+        ILoanService loanService,
+        IValidator<CreateLoanAccountRequest> validator
     )
     {
-        var accountId = await loanService.CreateLoanAccount(request.DebtorAccountNumber, request.LoanAmountCents);
+        validator.ValidateAndThrow(request);
 
-        return Results.Ok(new CreateAccountResponse(accountId));
+        var debtorAccountId = UInt128.Parse(request.DebtorAccountId);
+        var accountId = await loanService.CreateLoanAccount(debtorAccountId, request.LoanAmountCents);
+
+        return Results.Ok(new CreateAccountResponse(accountId.ToString()));
     }
 }
