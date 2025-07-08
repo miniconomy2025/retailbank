@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-sudo apt update && sudo apt install -y jq && sudo apt-get install -y unzip && sudo apt install -y openjdk-17-jre-headless
+sudo apt update && sudo apt install -y jq && sudo apt-get install -y unzip && sudo apt install -y openjdk-17-jre-headless && sudo apt install unzip
 
 
 # install aws cli if necessary
@@ -14,10 +14,6 @@ else
   sudo ./aws/install --update
 fi
 
-# clean up crap
-rm awscliv2.zip && rm flyway-commandline-10.11.0-linux-x64.tar.gz
-
-
 # Pull the secrets using the aws cli
 aws secretsmanager get-secret-value \
   --secret-id server-cert \
@@ -27,7 +23,7 @@ aws secretsmanager get-secret-value \
 aws secretsmanager get-secret-value \
   --secret-id server-key \
   --query SecretString \
-  --output text > /etc/ssl/certs/server.key
+  --output text > /etc/ssl/private/server.key
 
 aws secretsmanager get-secret-value \
   --secret-id ca-cert \
@@ -87,13 +83,17 @@ sudo systemctl status "$SERVICE_NAME" --no-pager
 echo "Setting up nginx and https"
 
 set -e
-FE_DOMAIN="retail-bank.pastpaperportal.co.za"
-API_DOMAIN="retail-bank-api.pastpaperportal.co.za"
+FE_DOMAIN="retail-bank.projects.bbdgrad.com"
+API_DOMAIN="retail-bank-api.projects.bbdgrad.com"
 
-EMAIL="admin@$DOMAIN" 
-NGINX_CONF="/etc/nginx/sites-available/$DOMAIN"
-NGINX_LINK="/etc/nginx/sites-enabled/$DOMAIN"
-FRONTEND_APP_DIR="/home/ubuntu/frontend-build"
+EMAIL="admin@$FE_DOMAIN" 
+NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
+NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
+FRONTEND_APP_DIR="/var/www/retail-bank"
+
+sudo mkdir -p /var/www/retail-bank
+sudo rm -rf /var/www/retail-bank/*
+mv /home/ubuntu/frontend-build/* /var/www/retail-bank/
 
 echo "Installing nginx and certbot..."
 sudo apt update
@@ -109,18 +109,20 @@ server {
     root $FRONTEND_APP_DIR;
     index index.html;
 
-    location /api/ {
-        if ($request_method = GET) {
-            proxy_pass http://localhost:5000;
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-            proxy_set_header Origin \$http_origin;
-            proxy_buffering off;
+    location /api {
+        limit_except GET {
+            deny all;
         }
-        return 403;
+        rewrite ^/api/(.*)$ /\$1 break;
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Origin \$http_origin;
+        proxy_buffering off;
     }
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }
@@ -142,7 +144,7 @@ server {
 
 
     location / {
-        proxy_pass http://localhost:5000;  # Or your backend
+        proxy_pass http://localhost:5000;
     }
 }
 EOF
