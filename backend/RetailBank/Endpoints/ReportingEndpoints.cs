@@ -27,5 +27,4 @@ public static class ReportingEndpoints
         );
     }
     
-    public record Report(uint TransactionalAccounts, uint LoanAccounts, Int128 BankBalance, UInt128 TotalMoney);
 }

@@ -2,10 +2,11 @@ import type { Transfer, TransferPage } from "@/models/transfers";
 import { apiFetch } from "@/utils/api";
 
 export async function getTransfers(
-  nextUrl?: string
+  nextUrl?: string,
+  limit : number  = 25
 ): Promise<TransferPage> {
   const response = await apiFetch({
-    path: nextUrl || `/transfers?limit=25`,
+    path: nextUrl || `/transfers?limit=${limit}`,
     method: "GET",
   });
 
