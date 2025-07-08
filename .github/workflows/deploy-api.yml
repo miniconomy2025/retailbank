@@ -36,7 +36,7 @@ jobs:
       - name: Stop systemd service if its already running
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_HOST << 'EOF'
-          [ -f "/etc/systemd/system/retail-bank.service" ] && sudo systemctl stop retail-bank.service
+          [ -f "/etc/systemd/system/retail-bank.service" ] && sudo systemctl stop retail-bank.service || true # ignore non-zero error code
           
 
       - name: Build the api and move copy to the ec2
