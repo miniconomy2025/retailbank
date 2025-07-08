@@ -80,7 +80,7 @@ export default function Overview() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch('http://localhost:5000/report') // Replace with your endpoint
+      fetch('/api/report')
         .then((res) => res.json())
         .then((newData) => {
           const bankBalancePoint = {
