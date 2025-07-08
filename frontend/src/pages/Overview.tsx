@@ -186,7 +186,6 @@ export default function Overview() {
 }
 
 function AccountCard({ title, account }: { title: string; account: Account }) {
-function AccountCard({ title, account }: { title: string; account: Account }) {
   const navigate = useNavigate();
   const displayBalance = account.id == '1002' ? account.balancePosted * -1 : account.balancePosted
   
