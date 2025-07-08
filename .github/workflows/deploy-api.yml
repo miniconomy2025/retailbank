@@ -47,8 +47,8 @@ jobs:
       - name: Copy app settings.json over
         working-directory: backend/RetailBank
         run: |
-          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem appsettings.json ubuntu@$EC2_HOST:~/build
-          
+          scp -r -o StrictHostKeyChecking=no -i ../../ec2_key.pem appsettings.json ubuntu@$EC2_HOST:~/build
+
       - name: Setup Node.js for frontend build
         uses: actions/setup-node@v3
         with:
