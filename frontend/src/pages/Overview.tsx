@@ -5,10 +5,10 @@ import type { Account } from "@/models/accounts";
 import { formatCurrency } from "@/utils/formatter";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Activity, Banknote, BanknoteArrowUp, DollarSign, PiggyBank } from 'lucide-react';
-import { type Transfer, type TransferPage } from "@/models/transfers";
+import { Activity, BanknoteArrowUp} from 'lucide-react';
+import {  type TransferPage } from "@/models/transfers";
 import { getTransfers } from "@/api/transfers";
-import { useDeferredValue, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { DataPoint } from "@/components/LiveChart";
 import LiveChart from "@/components/LiveChart";
 
