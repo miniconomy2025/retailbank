@@ -59,6 +59,7 @@ Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
 StandardOutput=journal
 StandardError=journal
+User=ubuntu
 
 [Install]
 WantedBy=multi-user.target
