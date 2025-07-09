@@ -6,6 +6,8 @@ namespace RetailBank.Services;
 
 public class AccountService(ILedgerRepository ledgerRepository) : IAccountService
 {
+    private const uint BatchMax = 8189;
+
     public async Task<UInt128> CreateTransactionalAccount(ulong salary)
     {
         var id = GenerateTransactionalAccountNumber();
@@ -17,7 +19,7 @@ public class AccountService(ILedgerRepository ledgerRepository) : IAccountServic
 
     public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax)
     {
-        return await ledgerRepository.GetAccounts(code, limit, timestampMax);
+        return await ledgerRepository.GetAccounts(code, null, limit, timestampMax);
     }
 
     public async Task<LedgerAccount?> GetAccount(UInt128 accountId)
@@ -28,6 +30,11 @@ public class AccountService(ILedgerRepository ledgerRepository) : IAccountServic
     public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 accountId, uint limit, ulong timestampMax, TransferSide? side)
     {
         return await ledgerRepository.GetAccountTransfers(accountId, limit, timestampMax, side);
+    }
+
+    public async Task<IEnumerable<LedgerAccount>> GetAccountLoans(UInt128 accountId)
+    {
+        return await ledgerRepository.GetAccounts(LedgerAccountType.Loan, accountId, BatchMax, 0);
     }
 
     public async Task<UInt128> GetTotalVolume()
@@ -44,6 +51,7 @@ public class AccountService(ILedgerRepository ledgerRepository) : IAccountServic
 
         return volume;
     }
+
     // 12 digits starting with "1000"
     private static ulong GenerateTransactionalAccountNumber()
     {

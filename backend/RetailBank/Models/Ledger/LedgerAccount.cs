@@ -1,4 +1,5 @@
 ﻿using RetailBank.Repositories;
+using RetailBank.Services;
 using TigerBeetle;
 
 namespace RetailBank.Models.Ledger;
@@ -18,7 +19,7 @@ public record LedgerAccount(
     public Int128 BalancePending => (Int128)DebitsPending - (Int128)CreditsPending;
     public Int128 BalancePosted => (Int128)DebitsPosted - (Int128)CreditsPosted;
 
-    public LedgerAccount(Account account)
+    public LedgerAccount(Account account, ulong startTime, uint timeScale)
         : this(
             account.Id,
             (LedgerAccountType)account.Code,
@@ -30,7 +31,7 @@ public record LedgerAccount(
             account.DebitsPosted,
             account.CreditsPending,
             account.CreditsPosted,
-            account.Timestamp
+            SimulationControllerService.MapToSimTimestamp(account.Timestamp, startTime, timeScale)
         )
     { }
 

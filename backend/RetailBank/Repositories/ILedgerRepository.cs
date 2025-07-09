@@ -1,11 +1,10 @@
 using RetailBank.Models.Ledger;
-using TigerBeetle;
 
 namespace RetailBank.Repositories;
 
 public interface ILedgerRepository
 {
-    public Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax);
+    public Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, UInt128? debitAccountId, uint limit, ulong timestampMax);
     public Task<LedgerAccount?> GetAccount(UInt128 id);
     public Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 id, uint limit, ulong timestampMax, TransferSide? side);
     public Task<LedgerTransfer?> GetTransfer(UInt128 id);
