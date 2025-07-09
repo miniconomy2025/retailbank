@@ -2,6 +2,10 @@ namespace RetailBank.Services;
 
 public interface ISimulationControllerService
 {
-    public void ToggleStart();
-    public bool IsRunning { get; set; }
+    bool IsRunning { get; }
+    ulong StartTime { get; }
+    uint TimeScale { get; }
+    
+    void Start(ulong startTime);
+    void Stop();
 }

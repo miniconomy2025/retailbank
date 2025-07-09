@@ -73,6 +73,17 @@ public static class AccountEndpoints
                 """
             );
 
+        routes
+            .MapGet("/accounts/{id:long}/loans", GetAccountLoans)
+            .Produces<AccountDto[]>(StatusCodes.Status200OK)
+            .WithSummary("Get An Account's Loans")
+            .WithDescription(
+                """
+                Get all loans to this account, returns empty array if
+                account does not exist.
+                """
+            );
+
         return routes;
     }
 
@@ -145,5 +156,17 @@ public static class AccountEndpoints
         var pagination = new CursorPagination<TransferDto>(transfers, nextUri);
 
         return Results.Ok(pagination);
+    }
+
+    public static async Task<IResult> GetAccountLoans(
+        ulong id,
+        HttpContext httpContext,
+        IAccountService accountService
+    )
+    {
+        var accounts = (await accountService.GetAccountLoans(id))
+            .Select(account => new AccountDto(account));
+
+        return Results.Ok(accounts);
     }
 }
