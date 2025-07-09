@@ -16,10 +16,12 @@ public class SimulationRunner(
     ISimulationControllerService simulationController
 ) : BackgroundService
 {
+    const ulong PayPeriod = 7 * 24 * 3600; // 1 week
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (options.Value.TimeScale == 0)
-            throw new InvalidOperationException("Invalid simulation period '0'.");
+            throw new InvalidOperationException("Invalid time scale '0'.");
 
         logger.LogInformation("Starting simulation");
 
@@ -30,10 +32,10 @@ public class SimulationRunner(
                 if (simulationController.IsRunning)
                 {
                     await RunSimulationStepAsync();
-                    await Task.Delay(TimeSpan.FromSeconds(options.Value.TimeScale / 2), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(PayPeriod / options.Value.TimeScale / 2), stoppingToken);
                     continue;
                 }
-            
+
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
             catch (Exception ex)
@@ -77,7 +79,7 @@ public class SimulationRunner(
             transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, transactionalAccounts.Last().Timestamp - 1);
         }
 
-        TimeSpan.FromSeconds(options.Value.TimeScale / 2);
+        TimeSpan.FromSeconds(PayPeriod / options.Value.TimeScale / 2);
 
         // Charge Interest & Pay Installments
 
