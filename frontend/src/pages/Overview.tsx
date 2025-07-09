@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Activity, BanknoteArrowUp } from "lucide-react";
 import { type TransferPage } from "@/models/transfers";
 import { getTransfers } from "@/api/transfers";
-import ChartsCard from "@/components/ChartsCard";
+import Charts from "@/components/Charts";
 import TransfersCard from "@/components/TransfersCard";
 
 export default function Overview() {
@@ -89,7 +89,7 @@ export default function Overview() {
               )}
             </div>
           </div>
-          <ChartsCard />
+          <Charts />
         </div>
         <div className="flex-col h-full flex-1 p-4 rounded-2xl shadow-lg border-slate-100 border-2">
           <div className="flex flex-row items-center gap-2 mb-4">

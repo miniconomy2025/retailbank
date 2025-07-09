@@ -9,7 +9,7 @@ const mintGreen = "rgba(144, 238, 144, 0.7)";
 const peach = "rgba(255, 218, 185, 0.7)";
 const pastelPurple = "rgba(216, 191, 216, 0.7)";
 
-export default function ChartsCard() {
+export default function Charts() {
   const [bankBalanceDataPoints, setBankBalanceDataPoints] = useState<
     DataPoint[]
   >([]);
