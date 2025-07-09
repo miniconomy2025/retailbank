@@ -8,6 +8,7 @@ public static class Bootstrapper
             .AddAccountEndpoints()
             .AddLoanEndpoints()
             .AddTransferEndpoints()
-            .AddSimulationEndpoints();
+            .AddSimulationEndpoints()
+            .AddReportingEndpoints();
     }
 }

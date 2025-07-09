@@ -70,29 +70,29 @@ public static class SimulationEndpoints
         return Results.NoContent();
     }
 
-    public static IResult ResetSimulation(
+    public async static Task<IResult> ResetSimulation(
         ILogger<SimulationRunner> logger,
         ISimulationControllerService simulationController,
         ITigerBeetleClientProvider tbClientProvider
     )
     {
         simulationController.IsRunning = false;
-        // run the script
-        _ = Task.Run(async () =>
-        {
-            var result = await Cli.Wrap("/bin/bash")
+
+        logger.LogInformation("Resetting Simulation");
+        
+        var result = await Cli.Wrap("/bin/bash")
             .WithArguments(["setup-tigerbeetle.sh"])
             .WithWorkingDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
             .ExecuteBufferedAsync();
 
-            logger.LogInformation(result.StandardOutput);
-            logger.LogError(result.StandardError);
+        logger.LogInformation(result.StandardOutput);
+        logger.LogError(result.StandardError);
 
-            // now that the tigerbeetle service has hopefully restarted, reset the client
-            tbClientProvider.ResetClient();
-        });
+        logger.LogInformation("Reset maybe complete...");
 
-        return Results.Accepted();
+        tbClientProvider.ResetClient();
+
+        return Results.NoContent();
     }
 }
 

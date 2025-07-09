@@ -62,8 +62,6 @@ public class SimulationRunner(
                 if (account.Closed)
                     continue;
 
-                logger.LogTrace($"Paying salary to {account.Id}");
-
                 try
                 {
                     await transferService.PaySalary((ulong)account.Id);
@@ -87,19 +85,8 @@ public class SimulationRunner(
         {
             foreach (var account in loanAccounts)
             {
-                if (account.Closed)
+                if (account.Closed || account.BalancePosted == 0)
                     continue;
-
-                logger.LogTrace($"Charging interest for {account.Id}");
-
-                try
-                {
-                    await loanService.ChargeInterest((ulong)account.Id);
-                }
-                catch (TigerBeetleResultException<CreateTransferResult> exception)
-                {
-                    logger.LogError($"Failed to charge interest for {account.Id}: {exception.Message}");
-                }
 
                 logger.LogTrace($"Paying installments for {account.Id}");
 
