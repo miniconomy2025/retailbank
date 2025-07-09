@@ -21,7 +21,7 @@ public record LedgerTransfer(
         transfer.CreditAccountId,
         transfer.Amount,
         transfer.PendingId > 0 ? transfer.PendingId : null,
-        SimulationControllerService.RealTimestampNanoToSimTimestampSeconds(transfer.Timestamp, startTime, timeScale),
+        SimulationControllerService.MapToSimTimestamp(transfer.Timestamp, startTime, timeScale),
         transfer.Flags.ToTransferKind(),
         transfer.UserData64
     )

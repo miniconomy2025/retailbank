@@ -22,7 +22,10 @@ public class SimulationControllerService(IOptions<SimulationOptions> options) : 
         IsRunning = false;
     }
 
-    public static ulong RealTimestampNanoToSimTimestampSeconds(ulong timestamp, ulong startTime, uint timeScale)
+    /// <summary>
+    /// Map real nanosecond unix timestamp to in-sim seconds unix timestamp
+    /// </summary>
+    public static ulong MapToSimTimestamp(ulong timestamp, ulong startTime, uint timeScale)
     {
         return (ulong)long.Max(0, ((long)timestamp - (long)startTime) * (int)timeScale / 1_000_000_000 + InSimulationStart);
     }
