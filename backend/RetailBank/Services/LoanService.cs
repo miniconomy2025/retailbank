@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using RetailBank.Exceptions;
 using RetailBank.Models.Ledger;
@@ -40,24 +41,6 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         return accountNumber;
     }
 
-    public async Task ChargeInterest(UInt128 loanAccountId)
-    {
-        var loanAccount = await ledgerRepository.GetAccount(loanAccountId) ?? throw new AccountNotFoundException(loanAccountId);
-
-        if (loanAccount.AccountType != LedgerAccountType.Loan)
-            throw new InvalidAccountException(loanAccount.AccountType, LedgerAccountType.Loan);
-
-        var balance = loanAccount.BalancePosted;
-        var interest = balance / 12 * InterestRate / 100;
-
-        await ledgerRepository.Transfer(new LedgerTransfer(
-            ID.Create(),
-            loanAccount.Id,
-            (ulong)LedgerAccountId.InterestIncome,
-            (UInt128)interest
-        ));
-    }
-
     public async Task PayInstallment(UInt128 loanAccountId)
     {
         var loanAccount = await ledgerRepository.GetAccount(loanAccountId) ?? throw new AccountNotFoundException(loanAccountId);
@@ -77,6 +60,8 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         var loanBalance = loanAccount.BalancePosted;
         var amountDue = Int128.Min(installment, loanBalance);
 
+        var interestDue = loanAccount.BalancePosted * InterestRate / 12 / 100;
+
         if (-loanDebitAccount.BalancePosted < amountDue)
         {
             // they have missed their payment their account is struck down by the wrath of god himself
@@ -85,8 +70,9 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         }
 
         await ledgerRepository.TransferLinked([
-            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)amountDue),
-            new LedgerTransfer(ID.Create(), loanDebitAccountId, loanAccount.Id, (UInt128)amountDue),
+            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)(amountDue - interestDue)),
+            new LedgerTransfer(ID.Create(), loanDebitAccountId, loanAccount.Id, (UInt128)(amountDue - interestDue)),
+            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.InterestIncome, (UInt128)interestDue)
         ]);
     }
 

@@ -51,7 +51,7 @@ public class AccountService(ILedgerRepository ledgerRepository) : IAccountServic
 
         return volume;
     }
-    
+
     // 12 digits starting with "1000"
     private static ulong GenerateTransactionalAccountNumber()
     {

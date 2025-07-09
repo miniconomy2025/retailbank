@@ -81,8 +81,9 @@ public static class SimulationEndpoints
         logger.LogInformation(result.StandardOutput);
         logger.LogError(result.StandardError);
 
-        // now that the tigerbeetle service has hopefully restarted, reset the client
         tbClientProvider.ResetClient();
+
+        logger.LogInformation("Reset maybe complete...");
 
         return Results.NoContent();
     }
