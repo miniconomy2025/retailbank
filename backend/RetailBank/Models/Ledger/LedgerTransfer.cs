@@ -15,13 +15,13 @@ public record LedgerTransfer(
     ulong? Reference = null
 )
 {
-    public LedgerTransfer(Transfer transfer) : this(
+    public LedgerTransfer(Transfer transfer, ulong startTime, uint timeScale) : this(
         transfer.Id,
         transfer.DebitAccountId,
         transfer.CreditAccountId,
         transfer.Amount,
         transfer.PendingId > 0 ? transfer.PendingId : null,
-        transfer.Timestamp,
+        SimulationControllerService.RealTimestampNanoToSimTimestampSeconds(transfer.Timestamp, startTime, timeScale),
         transfer.Flags.ToTransferKind(),
         transfer.UserData64
     )

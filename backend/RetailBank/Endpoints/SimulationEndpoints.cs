@@ -5,6 +5,7 @@ using RetailBank.Repositories;
 using TigerBeetle;
 using RetailBank.Exceptions;
 using RetailBank.Models.Ledger;
+using RetailBank.Models.Dtos;
 
 namespace RetailBank.Endpoints;
 
@@ -16,12 +17,11 @@ public static class SimulationEndpoints
         routes
             .MapPost("/simulation", StartSimulation)
             .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
             .WithSummary("Start Simulation");
 
         routes
             .MapDelete("/simulation", ResetSimulation)
-            .Produces(StatusCodes.Status202Accepted)
+            .Produces(StatusCodes.Status204NoContent)
             .WithSummary("Reset Simulation");
 
         return routes;
@@ -29,17 +29,11 @@ public static class SimulationEndpoints
 
     public static async Task<IResult> StartSimulation(
         ISimulationControllerService simulationController,
-        ILedgerRepository ledgerRepository
+        ILedgerRepository ledgerRepository,
+        StartSimulationRequest request
     )
     {
-        if (simulationController.IsRunning)
-            return Results.Problem(
-                detail: "The simulation has already begun.",
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Bad Request"
-            );
-
-        simulationController.IsRunning = true;
+        simulationController.Start(request.UnixEpochStartTime * 1_000_000_000);
 
         foreach (var variant in Enum.GetValues<BankId>())
         {
@@ -63,36 +57,34 @@ public static class SimulationEndpoints
 
         if (mainAccount?.BalancePosted == 0)
         {
-            // seed initial funds
             await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
         }
 
         return Results.NoContent();
     }
 
-    public static IResult ResetSimulation(
+    public static async Task<IResult> ResetSimulation(
         ILogger<SimulationRunner> logger,
         ISimulationControllerService simulationController,
         ITigerBeetleClientProvider tbClientProvider
     )
     {
-        simulationController.IsRunning = false;
-        // run the script
-        _ = Task.Run(async () =>
-        {
-            var result = await Cli.Wrap("/bin/bash")
+        simulationController.Stop();
+
+        logger.LogInformation("Resetting Simulation");
+        
+        var result = await Cli.Wrap("/bin/bash")
             .WithArguments(["setup-tigerbeetle.sh"])
             .WithWorkingDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
             .ExecuteBufferedAsync();
 
-            logger.LogInformation(result.StandardOutput);
-            logger.LogError(result.StandardError);
+        logger.LogInformation(result.StandardOutput);
+        logger.LogError(result.StandardError);
 
-            // now that the tigerbeetle service has hopefully restarted, reset the client
-            tbClientProvider.ResetClient();
-        });
+        // now that the tigerbeetle service has hopefully restarted, reset the client
+        tbClientProvider.ResetClient();
 
-        return Results.Accepted();
+        return Results.NoContent();
     }
 }
 

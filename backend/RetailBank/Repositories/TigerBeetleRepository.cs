@@ -5,7 +5,7 @@ using TigerBeetle;
 
 namespace RetailBank.Repositories;
 
-public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) : ILedgerRepository
+public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, ISimulationControllerService simulationControllerService) : ILedgerRepository
 {
     public const uint LedgerId = 1;
     public const ushort TransferCode = 1;
@@ -18,7 +18,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
             throw new TigerBeetleResultException<CreateAccountResult>(result);
     }
 
-    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, UInt128? debitAccountId, uint limit, ulong timestampMax)
     {
         var filter = new QueryFilter();
         filter.Limit = limit;
@@ -28,8 +28,11 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         if (code.HasValue)
             filter.Code = (ushort)code.Value;
 
+        if (debitAccountId.HasValue)
+            filter.UserData128 = debitAccountId.Value;
+
         var accounts = (await tbClientProvider.Client.QueryAccountsAsync(filter))
-            .Select(account => new LedgerAccount(account));
+            .Select(account => new LedgerAccount(account, simulationControllerService.StartTime, simulationControllerService.TimeScale));
         return accounts;
     }
 
@@ -40,7 +43,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         if (!account.HasValue)
             return null;
         
-        return new LedgerAccount(account.Value);
+        return new LedgerAccount(account.Value, simulationControllerService.StartTime, simulationControllerService.TimeScale);
     }
 
     public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 id, uint limit, ulong timestampMax, TransferSide? side)
@@ -52,7 +55,8 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         filter.Flags = (side?.ToAccountFilterFlags() ?? AccountFilterFlags.None) | AccountFilterFlags.Reversed;
 
         var transfers = (await tbClientProvider.Client.GetAccountTransfersAsync(filter))
-            .Select(transfer => new LedgerTransfer(transfer));
+            .Select(transfer => new LedgerTransfer(transfer, simulationControllerService.StartTime, simulationControllerService.TimeScale));
+        
         return transfers;
     }
 
@@ -64,7 +68,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         filter.Flags = QueryFilterFlags.Reversed;
 
         var transfers = (await tbClientProvider.Client.QueryTransfersAsync(filter))
-            .Select(transfer => new LedgerTransfer(transfer));
+            .Select(transfer => new LedgerTransfer(transfer, simulationControllerService.StartTime, simulationControllerService.TimeScale));
         return transfers;
     }
 
@@ -75,7 +79,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider) 
         if (!transfer.HasValue)
             return null;
 
-        return new LedgerTransfer(transfer.Value);
+        return new LedgerTransfer(transfer.Value, simulationControllerService.StartTime, simulationControllerService.TimeScale);
     }
 
     public async Task<UInt128> Transfer(LedgerTransfer ledgerTransfer)

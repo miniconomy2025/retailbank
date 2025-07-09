@@ -4,8 +4,10 @@ namespace RetailBank.Services;
 
 public interface IAccountService
 {
-    public Task<UInt128> CreateTransactionalAccount(ulong salary);
-    public Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax);
-    public Task<LedgerAccount?> GetAccount(UInt128 accountId);
-    public Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 accountId, uint limit, ulong timestampMax, TransferSide? side);
+    Task<UInt128> CreateTransactionalAccount(ulong salary);
+    Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax);
+    Task<LedgerAccount?> GetAccount(UInt128 accountId);
+    Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 accountId, uint limit, ulong timestampMax, TransferSide? side);
+    Task<IEnumerable<LedgerAccount>> GetAccountLoans(UInt128 accountId);
+    Task<UInt128> GetTotalVolume();
 }

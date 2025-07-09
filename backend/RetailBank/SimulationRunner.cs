@@ -18,7 +18,7 @@ public class SimulationRunner(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (options.Value.Period == 0)
+        if (options.Value.TimeScale == 0)
             throw new InvalidOperationException("Invalid simulation period '0'.");
 
         logger.LogInformation("Starting simulation");
@@ -30,7 +30,7 @@ public class SimulationRunner(
                 if (simulationController.IsRunning)
                 {
                     await RunSimulationStepAsync();
-                    await Task.Delay(TimeSpan.FromSeconds(options.Value.Period / 2), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(options.Value.TimeScale / 2), stoppingToken);
                     continue;
                 }
             
@@ -77,7 +77,7 @@ public class SimulationRunner(
             transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, transactionalAccounts.Last().Timestamp - 1);
         }
 
-        TimeSpan.FromSeconds(options.Value.Period / 2);
+        TimeSpan.FromSeconds(options.Value.TimeScale / 2);
 
         // Charge Interest & Pay Installments
 
