@@ -66,7 +66,7 @@ export default function Overview() {
       error={transferPageError}
     >
       <main className="w-full h-full flex flex-row gap-2">
-        <div className="scroll-auto min-h-[100%] w-[70%]">
+        <div className="scroll-auto min-h-[100%] w-[65%]">
           <div className=" flex flex-col gap-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {retailAcc && (
@@ -111,7 +111,7 @@ function AccountCard({ title, account }: { title: string; account: Account }) {
   return (
     <Card
       onClick={() => account && navigate(`/accounts/${account.id}`)}
-      className="cursor-pointer hover:shadow-lg hover:bg-gray-100"
+      className="cursor-pointer hover:shadow-lg hover:bg-gray-100 justify-between"
     >
       <CardHeader className="flex">
         <BanknoteArrowUp />

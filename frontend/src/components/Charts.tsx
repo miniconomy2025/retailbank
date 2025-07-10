@@ -47,8 +47,8 @@ export default function Charts() {
     ]);
   }, [reportData]);
   return (
-    <div className="grid grid-cols-2 gap-2 mt-2 scroll-auto">
-      <div className="h-64">
+    <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-2 mt-2 scroll-auto">
+      <div className="min-h-60">
         <LiveChart
           dataPoints={bankBalanceDataPoints}
           title="Bank Balance"
@@ -56,7 +56,7 @@ export default function Charts() {
           chartColor={skyBlue}
         />
       </div>
-      <div className="h-64">
+      <div className="min-h-60">
         <LiveChart
           dataPoints={loanAccountsDataPoints}
           title="Loan Accounts"
@@ -64,20 +64,20 @@ export default function Charts() {
           chartColor={mintGreen}
         />
       </div>
-      <div className="h-64">
-        <LiveChart
-          dataPoints={transactionAccountsDataPoints}
-          title="Transaction Accounts"
-          label="No. of accounts"
-          chartColor={peach}
-        />
-      </div>
-      <div className="h-64">
+      <div className="min-h-60">
         <LiveChart
           dataPoints={totalEconomicVolume}
           title="Economic Volume"
           label="Total Volume"
           chartColor={pastelPurple}
+        />
+      </div>
+      <div className="min-h-60">
+        <LiveChart
+          dataPoints={transactionAccountsDataPoints}
+          title="Transaction Accounts"
+          label="No. of accounts"
+          chartColor={peach}
         />
       </div>
     </div>
