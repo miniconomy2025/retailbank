@@ -23,6 +23,6 @@ public static class TransferActionExt
 
     public static TransferType ToTransferKind(this TransferFlags flags)
     {
-        return (TransferType)flags;
+        return (TransferType)((ushort)flags - 1);
     }
 }
