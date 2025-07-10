@@ -31,7 +31,7 @@ public record LedgerAccount(
             account.DebitsPosted,
             account.CreditsPending,
             account.CreditsPosted,
-            SimulationControllerService.MapToSimTimestamp(account.Timestamp, startTime, timeScale)
+            account.Timestamp
         )
     { }
 

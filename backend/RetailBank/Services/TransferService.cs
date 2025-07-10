@@ -1,13 +1,14 @@
-using System.Security.Cryptography;
+using Microsoft.Extensions.Options;
 using RetailBank.Exceptions;
 using RetailBank.Models.Interbank;
 using RetailBank.Models.Ledger;
+using RetailBank.Models.Options;
 using RetailBank.Repositories;
 using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class TransferService(ILedgerRepository ledgerRepository, IInterbankClient interbankClient) : ITransferService
+public class TransferService(ILedgerRepository ledgerRepository, IInterbankClient interbankClient, IOptions<InterbankNotificationOptions> interbankOptions) : ITransferService
 {
     public async Task<LedgerTransfer?> GetTransfer(UInt128 id)
     {
@@ -21,8 +22,6 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
 
     public async Task<UInt128> Transfer(UInt128 payerAccountId, UInt128 payeeAccountId, UInt128 amount, ulong reference)
     {
-        UInt128 transferId = GetTransferId(payerAccountId, payeeAccountId, amount, reference);
-
         var payerAccount = await ledgerRepository.GetAccount(payerAccountId) ?? throw new AccountNotFoundException(payerAccountId);
 
         if (payerAccount.AccountType != LedgerAccountType.Transactional)
@@ -39,11 +38,11 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
                     throw new InvalidAccountException(payerAccount.AccountType, LedgerAccountType.Transactional);
 
                 var idInternal = await ledgerRepository.Transfer(
-                    new LedgerTransfer(transferId, payerAccountId, payeeAccountId, amount, null, 0, TransferType.Transfer, reference)
+                    new LedgerTransfer(ID.Create(), payerAccountId, payeeAccountId, amount, reference, TransferType.Transfer)
                 );
                 return idInternal;
             case BankId.Commercial:
-                var idCommercial = await ExternalCommercialTransfer(transferId, payerAccountId, payeeAccountId, amount, reference);
+                var idCommercial = await ExternalCommercialTransfer(payerAccountId, payeeAccountId, amount, reference);
                 return idCommercial;
             default:
                 throw new InvalidDataException();
@@ -62,12 +61,24 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
 
         var salary = account.DebitOrder.Amount;
 
-        var id = await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), account.DebitOrder.DebitAccountId, account.Id, salary));
+        var id = await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), account.DebitOrder.DebitAccountId, account.Id, salary, 0, TransferType.Transfer));
     }
 
-    private async Task<UInt128> ExternalCommercialTransfer(UInt128 transferId, UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong reference)
+    private async Task<UInt128> ExternalCommercialTransfer(UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong reference)
     {
-        var pendingTransfer = new LedgerTransfer(transferId, payerAccountId, externalAccountId, amount, null, 0, TransferType.StartTransfer, reference);
+        // As of 12:01am 11 July, the commercial bank's interbank 
+        // transfer notification endpoint was not ready, however, 
+        // account number 2000 is a liability account representing 
+        // the total amount of money owned to the commercial, to 
+        // be settled at a later date.
+        if (interbankOptions.Value.SkipNotification)
+        {
+            var transfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, reference, TransferType.Transfer);
+            var transferId = await ledgerRepository.Transfer(transfer);
+            return transferId;
+        }
+
+        var pendingTransfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, reference, TransferType.StartTransfer);
         var pendingId = await ledgerRepository.Transfer(pendingTransfer);
 
         var result = await interbankClient.TryNotify(BankId.Commercial, pendingId, payerAccountId, externalAccountId, amount, reference);
@@ -80,9 +91,9 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
                     TransferType = TransferType.CompleteTransfer,
                 };
                 
-                await ledgerRepository.Transfer(completionTransfer);
+                var completedId = await ledgerRepository.Transfer(completionTransfer);
                 
-                return pendingId;
+                return completedId;
             case NotificationResult.Rejected:
                 var cancellationTransfer = pendingTransfer with
                 {
@@ -113,27 +124,5 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
             return bankCode;
 
         return null;
-    }
-
-    public static UInt128 GetTransferId(UInt128 payerAccountId, UInt128 payeeAccountId, UInt128 amount, ulong reference)
-    {
-        var sha1 = SHA1.Create();
-
-        var transferBytes = payerAccountId.ToArray()
-            .Concat(payerAccountId.ToArray())
-            .Concat(amount.ToArray())
-            .Concat(BitConverter.GetBytes(reference))
-            .ToArray();
-
-        var hashedBytes = SHA1.HashData(transferBytes);
-        UInt128 hash128 = 0;
-
-        for (int i = 0; i < 128 / 8; i++)
-        {
-            hash128 <<= 8;
-            hash128 += hashedBytes[i];
-        }
-
-        return hash128;
     }
 }

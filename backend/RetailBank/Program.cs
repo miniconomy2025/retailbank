@@ -26,6 +26,7 @@ builder.Services.Configure<JsonOptions>(options =>
 });
 
 builder.Services
+    .AddMemoryCache()
     .AddSingleton<ILedgerRepository, TigerBeetleRepository>()
     .AddHostedService<SimulationRunner>()
     .AddServices()
