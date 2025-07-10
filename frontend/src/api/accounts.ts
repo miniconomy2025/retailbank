@@ -42,3 +42,17 @@ export async function getAccountTransfers(
   }
   return await response.json();
 }
+
+export async function getAccountLoans(
+  accountId: string,
+): Promise<Account[]> {
+  const response = await apiFetch({
+    path: `/accounts/${accountId}/loans`,
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error(`${response.status}`);
+  }
+  return response.json();
+}
