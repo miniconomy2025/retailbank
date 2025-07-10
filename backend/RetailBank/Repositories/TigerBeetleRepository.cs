@@ -8,6 +8,7 @@ namespace RetailBank.Repositories;
 public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, ISimulationControllerService simulationControllerService) : ILedgerRepository
 {
     public const uint LedgerId = 1;
+    public const ushort TransferCode = 1;
 
     public async Task CreateAccount(LedgerAccount account)
     {

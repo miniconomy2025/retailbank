@@ -4,6 +4,6 @@ namespace RetailBank.Services;
 
 public interface ITigerBeetleClientProvider
 {
-    Client Client { get; set; }
+    Client Client { get; }
     void ResetClient();
 }

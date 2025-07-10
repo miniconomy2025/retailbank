@@ -57,7 +57,7 @@ public static class SimulationEndpoints
 
         if (mainAccount?.BalancePosted == 0)
         {
-            await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance));
+            await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance, 0, TransferType.Transfer));
         }
 
         return Results.NoContent();

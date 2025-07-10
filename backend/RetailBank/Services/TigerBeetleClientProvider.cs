@@ -6,22 +6,14 @@ namespace RetailBank.Services;
 
 public class TigerBeetleClientProvider : ITigerBeetleClientProvider
 {
-    private Client _client;
     private string _tbAddress;
 
-    public Client Client
-    {
-        get => _client;
-        set
-        {
-            _client = value;
-        }
-    }
+    public Client Client { get; private set; }
 
     public TigerBeetleClientProvider(IOptions<ConnectionStrings> options)
     {
         _tbAddress = options.Value.TigerBeetle;
-        _client = InitialiseClient();
+        Client = InitialiseClient();
     }
 
     public Client InitialiseClient()
@@ -31,6 +23,6 @@ public class TigerBeetleClientProvider : ITigerBeetleClientProvider
 
     public void ResetClient()
     {
-        _client = InitialiseClient(); 
+        Client = InitialiseClient(); 
     } 
 }

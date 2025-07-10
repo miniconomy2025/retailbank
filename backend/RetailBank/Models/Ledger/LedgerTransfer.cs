@@ -9,10 +9,10 @@ public record LedgerTransfer(
     UInt128 DebitAccountId,
     UInt128 CreditAccountId,
     UInt128 Amount,
+    ulong Reference,
+    TransferType TransferType,
     UInt128? ParentId = null,
-    ulong Timestamp = 0,
-    TransferType TransferType = TransferType.Transfer,
-    ulong Reference = 0
+    ulong Timestamp = 0
 )
 {
     public LedgerTransfer(Transfer transfer, ulong startTime, uint timeScale) : this(
@@ -20,10 +20,10 @@ public record LedgerTransfer(
         transfer.DebitAccountId,
         transfer.CreditAccountId,
         transfer.Amount,
+        transfer.UserData64,
+        transfer.Flags.ToTransferType(),
         transfer.PendingId > 0 ? transfer.PendingId : null,
-        SimulationControllerService.MapToSimTimestamp(transfer.Timestamp, startTime, timeScale),
-        transfer.Flags.ToTransferKind(),
-        transfer.UserData64
+        SimulationControllerService.MapToSimTimestamp(transfer.Timestamp, startTime, timeScale)
     )
     {
         // external transfers have bank ID as credit account ID, and external bank account number as UserData128
@@ -60,7 +60,7 @@ public record LedgerTransfer(
             UserData64 = Reference,
             UserData32 = 0,
             Ledger = TigerBeetleRepository.LedgerId,
-            Code = 1 + (ushort)TransferType.Transfer,
+            Code = TigerBeetleRepository.TransferCode,
             PendingId = ParentId ?? 0,
             Flags = TransferType.ToTransferFlags() | linkedFlag,
         };

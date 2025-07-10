@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using RetailBank.Exceptions;
 using RetailBank.Models.Interbank;
 using RetailBank.Models.Ledger;
@@ -21,8 +20,6 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
 
     public async Task<UInt128> Transfer(UInt128 payerAccountId, UInt128 payeeAccountId, UInt128 amount, ulong reference)
     {
-        UInt128 transferId = GetTransferId(payerAccountId, payeeAccountId, amount, reference);
-
         var payerAccount = await ledgerRepository.GetAccount(payerAccountId) ?? throw new AccountNotFoundException(payerAccountId);
 
         if (payerAccount.AccountType != LedgerAccountType.Transactional)
@@ -39,11 +36,11 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
                     throw new InvalidAccountException(payerAccount.AccountType, LedgerAccountType.Transactional);
 
                 var idInternal = await ledgerRepository.Transfer(
-                    new LedgerTransfer(transferId, payerAccountId, payeeAccountId, amount, null, 0, TransferType.Transfer, reference)
+                    new LedgerTransfer(ID.Create(), payerAccountId, payeeAccountId, amount, reference, TransferType.Transfer)
                 );
                 return idInternal;
             case BankId.Commercial:
-                var idCommercial = await ExternalCommercialTransfer(transferId, payerAccountId, payeeAccountId, amount, reference);
+                var idCommercial = await ExternalCommercialTransfer(payerAccountId, payeeAccountId, amount, reference);
                 return idCommercial;
             default:
                 throw new InvalidDataException();
@@ -62,12 +59,12 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
 
         var salary = account.DebitOrder.Amount;
 
-        var id = await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), account.DebitOrder.DebitAccountId, account.Id, salary));
+        var id = await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), account.DebitOrder.DebitAccountId, account.Id, salary, 0, TransferType.Transfer));
     }
 
-    private async Task<UInt128> ExternalCommercialTransfer(UInt128 transferId, UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong reference)
+    private async Task<UInt128> ExternalCommercialTransfer(UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong reference)
     {
-        var pendingTransfer = new LedgerTransfer(transferId, payerAccountId, externalAccountId, amount, null, 0, TransferType.StartTransfer, reference);
+        var pendingTransfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, reference, TransferType.StartTransfer);
         var pendingId = await ledgerRepository.Transfer(pendingTransfer);
 
         var result = await interbankClient.TryNotify(BankId.Commercial, pendingId, payerAccountId, externalAccountId, amount, reference);
@@ -113,27 +110,5 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
             return bankCode;
 
         return null;
-    }
-
-    public static UInt128 GetTransferId(UInt128 payerAccountId, UInt128 payeeAccountId, UInt128 amount, ulong reference)
-    {
-        var sha1 = SHA1.Create();
-
-        var transferBytes = payerAccountId.ToArray()
-            .Concat(payerAccountId.ToArray())
-            .Concat(amount.ToArray())
-            .Concat(BitConverter.GetBytes(reference))
-            .ToArray();
-
-        var hashedBytes = SHA1.HashData(transferBytes);
-        UInt128 hash128 = 0;
-
-        for (int i = 0; i < 128 / 8; i++)
-        {
-            hash128 <<= 8;
-            hash128 += hashedBytes[i];
-        }
-
-        return hash128;
     }
 }

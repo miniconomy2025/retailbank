@@ -33,8 +33,8 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         );
 
         await ledgerRepository.TransferLinked([
-            new LedgerTransfer(ID.Create(), accountNumber, debitAccountNumber, loanAmount),
-            new LedgerTransfer(ID.Create(), (ulong)LedgerAccountId.LoanControl, (ulong)BankId.Retail, loanAmount),
+            new LedgerTransfer(ID.Create(), accountNumber, debitAccountNumber, loanAmount, 0, TransferType.Transfer),
+            new LedgerTransfer(ID.Create(), (ulong)LedgerAccountId.LoanControl, (ulong)BankId.Retail, loanAmount, 0, TransferType.Transfer),
         ]);
 
         return accountNumber;
@@ -69,9 +69,9 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         }
 
         await ledgerRepository.TransferLinked([
-            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)(amountDue - interestDue)),
-            new LedgerTransfer(ID.Create(), loanDebitAccountId, loanAccount.Id, (UInt128)(amountDue - interestDue)),
-            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.InterestIncome, (UInt128)interestDue)
+            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)(amountDue - interestDue), 0, TransferType.Transfer),
+            new LedgerTransfer(ID.Create(), loanDebitAccountId, loanAccount.Id, (UInt128)(amountDue - interestDue), 0, TransferType.Transfer),
+            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.InterestIncome, (UInt128)interestDue, 0, TransferType.Transfer)
         ]);
     }
 

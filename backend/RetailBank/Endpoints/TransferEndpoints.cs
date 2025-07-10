@@ -1,9 +1,11 @@
 ﻿using System.Globalization;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using RetailBank.Exceptions;
 using RetailBank.Extensions;
 using RetailBank.Models.Dtos;
+using RetailBank.Models.Options;
 using RetailBank.Services;
 using TigerBeetle;
 
@@ -65,29 +67,28 @@ public static class TransferEndpoints
 
     public static async Task<IResult> CreateTransfer(
         CreateTransferRequest request,
-        ITransferService transactionService,
+        ITransferService transferService,
         ILogger<TransferService> logger,
-        IValidator<CreateTransferRequest> validator
+        IValidator<CreateTransferRequest> validator,
+        IOptions<InterbankNotificationOptions> options,
+        IIdempotencyCache idempotencyCache
     )
     {
         validator.ValidateAndThrow(request);
         
         var fromAccount = UInt128.Parse(request.From);
         var toAccount = UInt128.Parse(request.To);
+
+        idempotencyCache.InsertAndThrow(request);
         
         try
         {
-            var id = await transactionService.Transfer(fromAccount, toAccount, request.AmountCents, request.Reference);
-            return Results.Ok(new CreateTransferResponse(id.ToHex(), CreationStatus.NewTransfer));
+            var id = await transferService.Transfer(fromAccount, toAccount, request.AmountCents, request.Reference);
+            return Results.Ok(new CreateTransferResponse(id.ToHex()));
         }
         catch (TigerBeetleResultException<CreateTransferResult> ex)
         {
-            // idempotency
-            if (ex.ErrorCode == CreateTransferResult.Exists)
-            {
-                var transferId = TransferService.GetTransferId(fromAccount, toAccount, request.AmountCents, request.Reference).ToHex();
-                return Results.Ok(new CreateTransferResponse(transferId, CreationStatus.ExistingTransfer));
-            }
+            idempotencyCache.Clear(request);
             
             if (ex.ErrorCode == CreateTransferResult.ExceedsCredits)
             {
@@ -101,6 +102,11 @@ public static class TransferEndpoints
             logger.LogError("An unexpected exception has occurred while executing transfer, {}: {}", request, ex);
             
             return Results.StatusCode(500);
+        }
+        catch
+        {
+            idempotencyCache.Clear(request);
+            throw;
         }
     }
 
