@@ -8,7 +8,6 @@ namespace RetailBank.Repositories;
 public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, ISimulationControllerService simulationControllerService) : ILedgerRepository
 {
     public const uint LedgerId = 1;
-    public const ushort TransferCode = 1;
 
     public async Task CreateAccount(LedgerAccount account)
     {
@@ -110,7 +109,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, 
         var transferBalance = new Transfer
         {
             Id = idBalance,
-            Code = TransferCode,
+            Code = (ushort)TransferType.BalanceCredit,
             DebitAccountId = debitAccountId,
             CreditAccountId = creditAccountId,
             Amount = UInt128.MaxValue,
@@ -123,7 +122,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, 
         var transferClose = new Transfer
         {
             Id = idClose,
-            Code = TransferCode,
+            Code = (ushort)TransferType.CloseCredit,
             DebitAccountId = debitAccountId,
             CreditAccountId = creditAccountId,
             Amount = 0,
