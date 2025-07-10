@@ -23,7 +23,7 @@ public record LedgerTransfer(
         transfer.UserData64,
         transfer.Flags.ToTransferType(),
         transfer.PendingId > 0 ? transfer.PendingId : null,
-        SimulationControllerService.MapToSimTimestamp(transfer.Timestamp, startTime, timeScale)
+        transfer.Timestamp
     )
     {
         // external transfers have bank ID as credit account ID, and external bank account number as UserData128

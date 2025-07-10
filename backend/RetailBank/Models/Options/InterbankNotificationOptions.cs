@@ -4,6 +4,7 @@ public class InterbankNotificationOptions
 {
     public const string Section = "InterbankNotification";
 
+    public required bool SkipNotification { get; init; } = false;
     public required uint RetryCount { get; init; } = 3;
     public required uint DelaySeconds { get; init; } = 15;
     public required string ClientCertificatePath { get; init; }

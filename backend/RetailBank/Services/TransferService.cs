@@ -1,12 +1,14 @@
+using Microsoft.Extensions.Options;
 using RetailBank.Exceptions;
 using RetailBank.Models.Interbank;
 using RetailBank.Models.Ledger;
+using RetailBank.Models.Options;
 using RetailBank.Repositories;
 using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class TransferService(ILedgerRepository ledgerRepository, IInterbankClient interbankClient) : ITransferService
+public class TransferService(ILedgerRepository ledgerRepository, IInterbankClient interbankClient, IOptions<InterbankNotificationOptions> interbankOptions) : ITransferService
 {
     public async Task<LedgerTransfer?> GetTransfer(UInt128 id)
     {
@@ -64,6 +66,18 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
 
     private async Task<UInt128> ExternalCommercialTransfer(UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong reference)
     {
+        // As of 12:01am 11 July, the commercial bank's interbank 
+        // transfer notification endpoint was not ready, however, 
+        // account number 2000 is a liability account representing 
+        // the total amount of money owned to the commercial, to 
+        // be settled at a later date.
+        if (interbankOptions.Value.SkipNotification)
+        {
+            var transfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, reference, TransferType.Transfer);
+            var transferId = await ledgerRepository.Transfer(transfer);
+            return transferId;
+        }
+
         var pendingTransfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, reference, TransferType.StartTransfer);
         var pendingId = await ledgerRepository.Transfer(pendingTransfer);
 
@@ -77,9 +91,9 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
                     TransferType = TransferType.CompleteTransfer,
                 };
                 
-                await ledgerRepository.Transfer(completionTransfer);
+                var completedId = await ledgerRepository.Transfer(completionTransfer);
                 
-                return pendingId;
+                return completedId;
             case NotificationResult.Rejected:
                 var cancellationTransfer = pendingTransfer with
                 {
