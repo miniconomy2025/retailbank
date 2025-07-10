@@ -114,8 +114,10 @@ function AccountCard({ title, account }: { title: string; account: Account }) {
       className="cursor-pointer hover:shadow-lg hover:bg-gray-100 justify-between"
     >
       <CardHeader className="flex">
-        <BanknoteArrowUp />
-        <CardTitle className="text-xl font-light">{title}</CardTitle>
+        <div className="flex gap-2">
+          <BanknoteArrowUp className="w-6 h-6"/>
+          <CardTitle className="text-xl font-light flex-1">{title}</CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         <div
