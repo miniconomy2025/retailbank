@@ -52,7 +52,7 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, 
         filter.AccountId = id;
         filter.Limit = limit;
         filter.TimestampMax = timestampMax;
-        filter.Flags = (side?.ToAccountFilterFlags() ?? AccountFilterFlags.None) | AccountFilterFlags.Reversed;
+        filter.Flags = (side?.ToAccountFilterFlags() ?? (AccountFilterFlags.Debits | AccountFilterFlags.Credits)) | AccountFilterFlags.Reversed;
 
         var transfers = (await tbClientProvider.Client.GetAccountTransfersAsync(filter))
             .Select(transfer => new LedgerTransfer(transfer, simulationControllerService.StartTime, simulationControllerService.TimeScale));
