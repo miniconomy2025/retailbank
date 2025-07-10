@@ -1,4 +1,4 @@
-import { Line } from 'react-chartjs-2';
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,7 +9,7 @@ import {
   Tooltip,
   Legend,
   type ChartOptions,
-} from 'chart.js';
+} from "chart.js";
 
 ChartJS.register(
   CategoryScale,
@@ -26,8 +26,17 @@ export type DataPoint = {
   value: number;
 };
 
-export default function LiveChart({dataPoints, title, label, chartColor} : {dataPoints : DataPoint[], title : string, label: string, chartColor: string}) {
-
+export default function LiveChart({
+  dataPoints,
+  title,
+  label,
+  chartColor,
+}: {
+  dataPoints: DataPoint[];
+  title: string;
+  label: string;
+  chartColor: string;
+}) {
   const data = {
     labels: dataPoints.map((p) => p.time),
     datasets: [
@@ -37,11 +46,12 @@ export default function LiveChart({dataPoints, title, label, chartColor} : {data
         borderColor: chartColor,
         backgroundColor: chartColor,
         tension: 0.4,
+        pointRadius: 0,
       },
     ],
   };
 
-  const options : ChartOptions<'line'> = {
+  const options: ChartOptions<"line"> = {
     responsive: true,
     animation: false,
     plugins: {
@@ -49,9 +59,19 @@ export default function LiveChart({dataPoints, title, label, chartColor} : {data
       title: { display: true, text: title },
     },
     scales: {
+      x: {
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45,
+        },
+      },
       y: { beginAtZero: true },
     },
   };
 
-  return <div className='w-full h-full'> <Line data={data} options={options} /> </div> ;
+  return (
+    <div className="w-full h-full">
+      <Line data={data} options={options} />
+    </div>
+  );
 }
