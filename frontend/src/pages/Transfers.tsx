@@ -76,7 +76,7 @@ export default function Transfers() {
             <Input
               placeholder="Transfer ID"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.slice(0, 31))}
+              onChange={(e) => setSearchTerm(e.target.value.slice(0, 32))}
               onKeyDown={handleKeyPress}
               className="pl-8"
             />
