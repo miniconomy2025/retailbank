@@ -8,7 +8,7 @@ namespace RetailBank.Services;
 
 public class InterbankClient(HttpClient httpClient, IOptions<InterbankNotificationOptions> options) : IInterbankClient
 {
-    private async Task<NotificationResult> TryNotifyInternal(BankId bank, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong? reference)
+    private async Task<NotificationResult> TryNotifyInternal(BankId bank, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
     {
         switch (bank)
         {
@@ -18,7 +18,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankNotificati
                     from.ToString(),
                     to.ToString(),
                     amount,
-                    reference?.ToString() ?? "Retail Bank Transfer"
+                    reference.ToString()
                 );
 
                 HttpResponseMessage response;
@@ -43,7 +43,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankNotificati
         }
     }
 
-    public async Task<NotificationResult> TryNotify(BankId bank, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong? reference)
+    public async Task<NotificationResult> TryNotify(BankId bank, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
     {
         NotificationResult result = NotificationResult.Rejected;
         

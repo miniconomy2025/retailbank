@@ -11,7 +11,7 @@ public record TransferDto(
     UInt128 Amount,
     string? ParentId,
     ulong Timestamp,
-    ulong? Reference
+    ulong Reference
 )
 {
     public TransferDto(LedgerTransfer transfer)
@@ -23,7 +23,7 @@ public record TransferDto(
             transfer.Amount,
             transfer.ParentId.HasValue ? transfer.ParentId.Value.ToHex() : null,
             transfer.Timestamp,
-            transfer.Reference > 0 ? transfer.Reference : null
+            transfer.Reference
         )
     { }
 }
