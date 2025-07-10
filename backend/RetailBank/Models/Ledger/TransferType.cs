@@ -16,13 +16,23 @@ public enum TransferType
 
 public static class TransferActionExt
 {
+    private const TransferType TransferTypeMask =
+        TransferType.Transfer | 
+        TransferType.StartTransfer | 
+        TransferType.CompleteTransfer | 
+        TransferType.CancelTransfer | 
+        TransferType.BalanceDebit | 
+        TransferType.BalanceCredit | 
+        TransferType.CloseDebit | 
+        TransferType.CloseCredit;
+
     public static TransferFlags ToTransferFlags(this TransferType transferType)
     {
-        return (TransferFlags)transferType;
+        return (TransferFlags)(transferType & TransferTypeMask);
     }
 
     public static TransferType ToTransferType(this TransferFlags flags)
     {
-        return (TransferType)((ushort)flags - 1);
+        return (TransferType)(ushort)flags & TransferTypeMask;
     }
 }
