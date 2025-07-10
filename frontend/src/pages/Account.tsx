@@ -1,4 +1,4 @@
-import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -10,15 +10,17 @@ import {
 } from "@/components/ui/table";
 import { type Account } from "@/models/accounts";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { getAccount, getAccountTransfers } from "@/api/accounts";
+import { getAccount, getAccountLoans, getAccountTransfers } from "@/api/accounts";
 import PageWrapper from "@/components/PageWrapper";
 import { formatCurrency } from "@/utils/formatter";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type { Transfer, TransferPage } from "@/models/transfers";
 import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function Account() {
+  const navigate = useNavigate();
   const { accountId: accountIdString } = useParams();
   const accountId = accountIdString ?? "0";
 
@@ -44,6 +46,16 @@ export default function Account() {
       getAccountTransfers(accountId, pageParam as string | undefined),
     getNextPageParam: (lastPage) => lastPage.next || undefined,
     initialPageParam: undefined,
+    retry: false,
+  });
+
+  const {
+    data: loanAccounts,
+    isLoading: isLoanAccountsLoading,
+    error: loanAccountsError,
+  } = useQuery<Account[]>({
+    queryKey: [`account-${accountId}-loans`],
+    queryFn: () => getAccountLoans(accountId),
     retry: false,
   });
 
@@ -73,57 +85,56 @@ export default function Account() {
 
   return (
     <PageWrapper
-      loading={isAccountLoading || isTransfersLoading}
-      error={accountError || transfersError}
+      loading={isAccountLoading || isTransfersLoading || isLoanAccountsLoading}
+      error={accountError || transfersError || loanAccountsError}
     >
       <div className="h-full flex flex-col gap-4">
         <div>
           <h1 className="text-3xl font-bold text-left">Accounts Transfers</h1>
           <p className="text-left">Account {accountId}</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex">
-              <CardTitle className="font-medium">Posted balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">
-                {formatCurrency(account?.balancePosted ?? 0)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex">
-              <CardTitle className="font-medium">Pending Balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">
-                {formatCurrency(account?.balancePending ?? 0)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex">
-              <CardTitle className="font-medium">Total Debit</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">
-                {formatCurrency(account?.debitsPosted ?? 0)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex">
-              <CardTitle className="font-medium">Total Credit</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">
-                {formatCurrency(account?.creditsPending ?? 0)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <AccountCardRow account={account} />
+
+        {/* Loans Section (shown only for non-loan accounts) */}
+        { account && account.accountType !== 'Loan' ? (
+          <section className="rounded-md border overflow-auto">
+            {loanAccounts?.length ? <h2 className="text-2xl font-bold px-4 py-2 justify-self-start">Loans</h2> : null}
+            <Accordion type="multiple">
+              {loanAccounts?.length && loanAccounts.length > 0 ? (<>{
+                loanAccounts.map((loanAccount) => (
+                  <AccordionItem key={loanAccount.id} value={loanAccount.id}>
+                    <AccordionTrigger className="px-4">
+                      Account {loanAccount.id} {loanAccount.closed ? "(Closed)" : "(Open)"}
+                    </AccordionTrigger>
+                    <AccordionContent className="p-4">
+                      <span 
+                        className="flex items-center gap-2 mb-2 cursor-pointer hover:underline w-fit"
+                        onClick={() => navigate(`/accounts/${loanAccount.id}`)}
+                      >
+                        <ExternalLink
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm">
+                          View Account
+                        </span>
+                      </span>
+                      <AccountCardRow account={loanAccount} />
+                    </AccordionContent>
+                  </AccordionItem>
+                ))
+              }</>) : (
+                <div className="text-center py-8">
+                  No loans found for this account
+                </div>
+              )}
+            </Accordion>
+          </section>
+        ) : null }
+
+
+        {/* Transfers Section */}
         <div className="rounded-md border overflow-auto">
+          {transfers?.length ? <h2 className="text-2xl font-bold px-4 py-2 justify-self-start">Transfers</h2> : null}
           {transfers?.length === 0 ? (
             <div className="text-center py-8 ">
               No transfers found for this account
@@ -186,3 +197,54 @@ export default function Account() {
     </PageWrapper>
   );
 }
+
+const AccountCardRow = ({ account }: { account: Account | undefined }) => (
+  <>
+    { account ? (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex">
+            <CardTitle className="font-medium">Posted balance</CardTitle>
+          </CardHeader>
+      <CardContent>
+        <div className="text-xl font-bold">
+          {formatCurrency(account?.balancePosted ?? 0)}
+        </div>
+      </CardContent>
+    </Card>
+    <Card>
+      <CardHeader className="flex">
+        <CardTitle className="font-medium">Pending Balance</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xl font-bold">
+          {formatCurrency(account?.balancePending ?? 0)}
+        </div>
+      </CardContent>
+    </Card>
+    <Card>
+      <CardHeader className="flex">
+        <CardTitle className="font-medium">Total Debit</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xl font-bold">
+          {formatCurrency(account?.debitsPosted ?? 0)}
+        </div>
+      </CardContent>
+    </Card>
+    <Card>
+      <CardHeader className="flex">
+        <CardTitle className="font-medium">Total Credit</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xl font-bold">
+          {formatCurrency(account?.creditsPending ?? 0)}
+        </div>
+      </CardContent>
+    </Card>
+  </div> 
+    ) : (
+      <div className="text-center py-8">Account not found</div>
+    )}
+  </>
+);
