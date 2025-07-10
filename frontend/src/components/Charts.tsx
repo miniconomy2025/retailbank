@@ -23,32 +23,32 @@ export default function Charts() {
   const { data: reportData } = useQuery<ReportData>({
     queryKey: ["report"],
     queryFn: getReport,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 
   useEffect(() => {
     if (!reportData) return;
 
     setBankBalanceDataPoints((prev) => [
-      ...prev.slice(-59),
+      ...prev.slice(-30),
       { time: reportData.timestamp, value: reportData.bankBalance },
     ]);
     setLoanAccountDataPoints((prev) => [
-      ...prev.slice(-59),
+      ...prev.slice(-30),
       { time: reportData.timestamp, value: reportData.loanAccounts },
     ]);
     setTotalEconomic((prev) => [
-      ...prev.slice(-59),
+      ...prev.slice(-30),
       { time: reportData.timestamp, value: reportData.totalMoney },
     ]);
     setTransactionalAccountsDataPoints((prev) => [
-      ...prev.slice(-59),
+      ...prev.slice(-30),
       { time: reportData.timestamp, value: reportData.transactionalAccounts },
     ]);
   }, [reportData]);
   return (
     <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-2 mt-2 scroll-auto">
-      <div className="min-h-60">
+      <div className="h-60">
         <LiveChart
           dataPoints={bankBalanceDataPoints}
           title="Bank Balance"
@@ -56,7 +56,7 @@ export default function Charts() {
           chartColor={skyBlue}
         />
       </div>
-      <div className="min-h-60">
+      <div className="h-60">
         <LiveChart
           dataPoints={loanAccountsDataPoints}
           title="Loan Accounts"
@@ -64,7 +64,7 @@ export default function Charts() {
           chartColor={mintGreen}
         />
       </div>
-      <div className="min-h-60">
+      <div className="h-60">
         <LiveChart
           dataPoints={totalEconomicVolume}
           title="Economic Volume"
@@ -72,7 +72,7 @@ export default function Charts() {
           chartColor={pastelPurple}
         />
       </div>
-      <div className="min-h-60">
+      <div className="h-60">
         <LiveChart
           dataPoints={transactionAccountsDataPoints}
           title="Transaction Accounts"

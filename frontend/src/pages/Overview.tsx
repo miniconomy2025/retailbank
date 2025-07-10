@@ -16,7 +16,7 @@ export default function Overview() {
     queryKey: [`account-${1000}`],
     queryFn: () => getAccount("1000"),
     retry: false,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 
   const { data: interestIncomeAcc, isLoading: interestIncomeLoading } =
@@ -24,7 +24,7 @@ export default function Overview() {
       queryKey: [`account-${1002}`],
       queryFn: () => getAccount("1002"),
       retry: false,
-      refetchInterval: 5000,
+      refetchInterval: 10000,
     });
 
   const { data: loanControlAcc, isLoading: loanControlLoading } =
@@ -32,7 +32,7 @@ export default function Overview() {
       queryKey: [`account-${1003}`],
       queryFn: () => getAccount("1003"),
       retry: false,
-      refetchInterval: 5000,
+      refetchInterval: 10000,
     });
 
   const { data: commercialBankAcc, isLoading: commercialBankLoading } =
@@ -40,7 +40,7 @@ export default function Overview() {
       queryKey: [`account-${2000}`],
       queryFn: () => getAccount("2000"),
       retry: false,
-      refetchInterval: 5000,
+      refetchInterval: 10000,
     });
 
   const {
