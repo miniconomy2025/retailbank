@@ -22,7 +22,14 @@ public static class TransferEndpoints
             .WithDescription(
                 """
                 Transfer money between accounts. Debiting account
-                `from` and crediting account `to`. This can be used 
+                `from` and crediting account `to`. For idempotency,
+                the all four fields (`from`, `to`, `amount`, `reference`)
+                must together be unique. `reference` should be kept
+                the same for repeated requests to ensure multiple
+                transactions are not mistakenly created. If you need
+                to check if a transfer was created with this request if 
+                this is an existing transfer, check the `creationStatus` 
+                field in the response. This can be used 
                 for transfers between retail bank accounts, and 
                 for transfers to the commercial bank. Retail bank 
                 account numbers start with `1000`, while commercial 
@@ -71,10 +78,17 @@ public static class TransferEndpoints
         try
         {
             var id = await transactionService.Transfer(fromAccount, toAccount, request.AmountCents, request.Reference);
-            return Results.Ok(new CreateTransferResponse(id.ToHex()));
+            return Results.Ok(new CreateTransferResponse(id.ToHex(), CreationStatus.NewTransfer));
         }
         catch (TigerBeetleResultException<CreateTransferResult> ex)
         {
+            // idempotency
+            if (ex.ErrorCode == CreateTransferResult.Exists)
+            {
+                var transferId = TransferService.GetTransferId(fromAccount, toAccount, request.AmountCents, request.Reference).ToHex();
+                return Results.Ok(new CreateTransferResponse(transferId, CreationStatus.ExistingTransfer));
+            }
+            
             if (ex.ErrorCode == CreateTransferResult.ExceedsCredits)
             {
                 return Results.Problem(

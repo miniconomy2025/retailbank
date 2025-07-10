@@ -4,5 +4,5 @@ public record CreateTransferRequest(
     string From,
     string To,
     UInt128 AmountCents,
-    ulong? Reference
+    ulong Reference
 );

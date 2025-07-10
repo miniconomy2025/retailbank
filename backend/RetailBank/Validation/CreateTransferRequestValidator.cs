@@ -16,8 +16,5 @@ public class CreateTransferRequestValidator : AbstractValidator<CreateTransferRe
         RuleFor(req => req.AmountCents)
             .NotEmpty()
             .WithMessage("Cannot transfer an amount of 0 cents.");
-        RuleFor(req => req.Reference)
-            .Must(req => !req.HasValue || req.Value > 0)
-            .WithMessage("Reference must be a positive number if specified.");
     }
 }
