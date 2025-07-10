@@ -66,7 +66,7 @@ public class TransferService(ILedgerRepository ledgerRepository, IInterbankClien
 
     private async Task<UInt128> ExternalCommercialTransfer(UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong reference)
     {
-        // As of 23:51 10 July, the commercial bank's interbank 
+        // As of 00:19am 11 July, the commercial bank's interbank 
         // transfer notification endpoint was not ready, however, 
         // account number 2000 is a liability account representing 
         // the total amount of money owed to the commercial,
