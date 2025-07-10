@@ -60,7 +60,7 @@ public record LedgerTransfer(
             UserData64 = Reference,
             UserData32 = 0,
             Ledger = TigerBeetleRepository.LedgerId,
-            Code = (ushort)TransferType.Transfer,
+            Code = 1 + (ushort)TransferType.Transfer,
             PendingId = ParentId ?? 0,
             Flags = TransferType.ToTransferFlags() | linkedFlag,
         };
