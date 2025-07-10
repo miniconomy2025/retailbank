@@ -7,7 +7,7 @@ export default function TransfersCard({
   transferPage: TransferPage;
 }) {
   return (
-    <div className="overflow-x-auto h-[90%] overflow-y-auto border shadow-sm">
+    <div className="overflow-x-auto h-[92%] overflow-y-auto border shadow-sm">
       <table className="min-w-full table-auto text-left text-sm">
         <thead className=" bg-slate-100 text-slate-800">
           <tr>
