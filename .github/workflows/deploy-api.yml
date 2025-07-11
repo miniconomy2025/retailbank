@@ -72,11 +72,6 @@ jobs:
         run: |
           scp -r -o StrictHostKeyChecking=no -i ec2_key.pem ./backend/setup-tigerbeetle.sh ubuntu@$EC2_HOST:~/setup-tigerbeetle.sh
       
-      - name: Run tigerbeetle setup
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_HOST << 'EOF'
-          bash ~/setup-tigerbeetle.sh
-      
       - name: Run start script
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_HOST << 'EOF'
