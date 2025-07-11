@@ -28,7 +28,7 @@ public record LedgerTransfer(
     {
         // external transfers have bank ID as credit account ID, and external bank account number as UserData128
         var bank = TransferService.GetBankCode(transfer.CreditAccountId);
-        if (bank.HasValue && bank.Value != BankId.Retail)
+        if (bank.HasValue && bank.Value != Bank.Retail)
         {
             CreditAccountId = transfer.UserData128;
         }
@@ -42,7 +42,7 @@ public record LedgerTransfer(
         UInt128 supplementaryAccountId = 0;
         
         // Transfers to external banks must go to the bank's internal account, since we do not know about their account types.
-        if (bank.HasValue && bank.Value != BankId.Retail)
+        if (bank.HasValue && bank.Value != Bank.Retail)
         {
             creditAccount = (ulong)bank.Value;
             supplementaryAccountId = CreditAccountId;

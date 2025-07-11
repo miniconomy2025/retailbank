@@ -4,7 +4,7 @@ using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
-public class AccountService(ILedgerRepository ledgerRepository) : IAccountService
+public class AccountService(ILedgerRepository ledgerRepository)
 {
     private const uint BatchMax = 8189;
 
@@ -12,7 +12,7 @@ public class AccountService(ILedgerRepository ledgerRepository) : IAccountServic
     {
         var id = GenerateTransactionalAccountNumber();
 
-        await ledgerRepository.CreateAccount(new LedgerAccount(id, LedgerAccountType.Transactional, new DebitOrder((ulong)BankId.Retail, salary)));
+        await ledgerRepository.CreateAccount(new LedgerAccount(id, LedgerAccountType.Transactional, new DebitOrder((ulong)Bank.Retail, salary)));
 
         return id;
     }
@@ -44,7 +44,7 @@ public class AccountService(ILedgerRepository ledgerRepository) : IAccountServic
         {
             volume += (await GetAccount((ulong)variant))?.DebitsPosted ?? 0;
         }
-        foreach (var variant in Enum.GetValues<BankId>())
+        foreach (var variant in Enum.GetValues<Bank>())
         {
             volume += (await GetAccount((ulong)variant))?.DebitsPosted ?? 0;
         }

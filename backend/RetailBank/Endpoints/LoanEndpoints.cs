@@ -28,7 +28,7 @@ public static class LoanEndpoints
 
     public static async Task<IResult> CreateLoanAccount(
         CreateLoanAccountRequest request,
-        ILoanService loanService,
+        LoanService loanService,
         IValidator<CreateLoanAccountRequest> validator
     )
     {

@@ -10,11 +10,12 @@ public static class Bootstrapper
     {
         services.AddOptions<ConnectionStrings>().BindConfiguration(ConnectionStrings.Section);
         services.AddOptions<SimulationOptions>().BindConfiguration(SimulationOptions.Section);
-        services.AddOptions<InterbankNotificationOptions>().BindConfiguration(InterbankNotificationOptions.Section);
+        services.AddOptions<LoanOptions>().BindConfiguration(LoanOptions.Section);
+        services.AddOptions<InterbankTransferOptions>().BindConfiguration(InterbankTransferOptions.Section);
 
-        services.AddHttpClient<IInterbankClient, InterbankClient>().ConfigurePrimaryHttpMessageHandler(provider =>
+        services.AddHttpClient<InterbankClient>().ConfigurePrimaryHttpMessageHandler(provider =>
         {
-            var options = provider.GetRequiredService<IOptions<InterbankNotificationOptions>>();
+            var options = provider.GetRequiredService<IOptions<InterbankTransferOptions>>();
             
             var handler = new HttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
@@ -27,11 +28,11 @@ public static class Bootstrapper
         });
 
         return services
-            .AddSingleton<ITigerBeetleClientProvider, TigerBeetleClientProvider>()
-            .AddSingleton<IIdempotencyCache, IdempotencyCache>()
-            .AddSingleton<IAccountService, AccountService>()
-            .AddSingleton<ILoanService, LoanService>()
-            .AddSingleton<ITransferService, TransferService>()
-            .AddSingleton<ISimulationControllerService, SimulationControllerService>();
+            .AddSingleton<TigerBeetleClientProvider>()
+            .AddSingleton<IdempotencyCache>()
+            .AddSingleton<AccountService>()
+            .AddSingleton<LoanService>()
+            .AddSingleton<TransferService>()
+            .AddSingleton<SimulationControllerService>();
     }
 }

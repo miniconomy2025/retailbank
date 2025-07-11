@@ -67,11 +67,10 @@ public static class TransferEndpoints
 
     public static async Task<IResult> CreateTransfer(
         CreateTransferRequest request,
-        ITransferService transferService,
+        TransferService transferService,
         ILogger<TransferService> logger,
         IValidator<CreateTransferRequest> validator,
-        IOptions<InterbankNotificationOptions> options,
-        IIdempotencyCache idempotencyCache
+        IdempotencyCache idempotencyCache
     )
     {
         validator.ValidateAndThrow(request);
@@ -112,7 +111,7 @@ public static class TransferEndpoints
 
     public static async Task<IResult> GetTransfers(
         HttpContext httpContext,
-        ITransferService transferService,
+        TransferService transferService,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong timestampMax = 0
     )
@@ -134,7 +133,7 @@ public static class TransferEndpoints
 
     public static async Task<IResult> GetTransfer(
         string id,
-        ITransferService transferService
+        TransferService transferService
     )
     {
         var transferId = UInt128.Parse(id, NumberStyles.HexNumber);
