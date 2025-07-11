@@ -33,7 +33,7 @@ public static class SimulationEndpoints
         StartSimulationRequest request
     )
     {
-        simulationController.Start(request.UnixEpochStartTime * 1_000_000_000);
+        simulationController.Start(request.EpochStartTime * 1_000_000_000);
 
         foreach (var variant in Enum.GetValues<BankId>())
         {
