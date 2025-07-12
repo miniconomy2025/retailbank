@@ -105,9 +105,8 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         }
 
         var transfer = new CreateCommercialTransferRequest(
-            transactionId.ToHex(),
-            externalAccount,
             to.ToString(),
+            "commercial-bank",
             (decimal)amount / 100.0m,
             $"Retail Transfer {from}, Reference: {reference}"
         );
