@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using Microsoft.Extensions.Options;
-using RetailBank.Extensions;
 using RetailBank.Models.Interbank;
 using RetailBank.Models.Ledger;
 using RetailBank.Models.Options;
@@ -9,10 +8,19 @@ namespace RetailBank.Services;
 
 public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOptions> options)
 {
-    private async Task<string?> TryGetOrCreateExternalAccount(string getAccountUrl, string createAccountUrl)
+    private async Task<decimal?> TryGetExternalAccountBalance(string getAccountUrl, string createAccountUrl)
     {
-
-        string? externalAccountId;
+        try
+        {
+            var createAccountResponse = await httpClient.PostAsync(createAccountUrl, null);
+         
+            if (createAccountResponse.StatusCode != HttpStatusCode.Conflict)
+                createAccountResponse.EnsureSuccessStatusCode();
+        }
+        catch
+        {
+            return null;
+        }
 
         try
         {
@@ -21,35 +29,15 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
             if (getAccountResponse.StatusCode != HttpStatusCode.NotFound)
                 getAccountResponse.EnsureSuccessStatusCode();
 
-            var getAccountBody = await getAccountResponse.Content.ReadFromJsonAsync<CommercialAccountNumberResponse>();
+            var getAccountBody = await getAccountResponse.Content.ReadFromJsonAsync<GetCommercialAccountResponse>();
             ArgumentNullException.ThrowIfNull(getAccountBody);
 
-            externalAccountId = getAccountBody.AccountNumber;
+            return getAccountBody.NetBalance;
         }
         catch
         {
-            externalAccountId = null;
+            return null;
         }
-
-        if (string.IsNullOrWhiteSpace(externalAccountId))
-        {
-            try
-            {
-                var createAccountResponse = await httpClient.PostAsync(createAccountUrl, null);
-                createAccountResponse.EnsureSuccessStatusCode();
-
-                var createAccountBody = await createAccountResponse.Content.ReadFromJsonAsync<CommercialAccountNumberResponse>();
-                ArgumentNullException.ThrowIfNull(createAccountBody);
-
-                externalAccountId = createAccountBody.AccountNumber;
-            }
-            catch
-            {
-                externalAccountId = null;
-            }
-        }
-
-        return externalAccountId;
     }
     
     private async Task<decimal?> TryGetExternalAccountBalance(string getAccountBalanceUrl)
@@ -86,15 +74,11 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
 
     private async Task<NotificationResult> TryExternalTransferInternal(InterbankTransferBankDetails details, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
     {
-        var externalAccount = await TryGetOrCreateExternalAccount(details.GetAccountUrl, details.CreateAccountUrl);
-        if (string.IsNullOrWhiteSpace(externalAccount))
+        var externalBalanceDecimal = await TryGetExternalAccountBalance(details.GetAccountUrl, details.CreateAccountUrl);
+        if (externalBalanceDecimal == null)
             return NotificationResult.Rejected;
 
-        var externalBalance = await TryGetExternalAccountBalance(details.GetAccountBalanceUrl);
-        if (externalBalance == null)
-            return NotificationResult.Rejected;
-
-        var externalBalanceCents = (UInt128)(100 * externalBalance);
+        var externalBalanceCents = (UInt128)(100 * externalBalanceDecimal);
 
         // if external balance less than loan threshold then we issue a new loan
         if (externalBalanceCents < options.Value.LoanAmountCents)
