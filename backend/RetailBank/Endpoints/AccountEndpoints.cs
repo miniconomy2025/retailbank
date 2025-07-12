@@ -89,7 +89,7 @@ public static class AccountEndpoints
 
     public static async Task<IResult> CreateTransactionalAccount(
         CreateTransactionAccountRequest request,
-        IAccountService accountService
+        AccountService accountService
     )
     {
         var accountId = await accountService.CreateTransactionalAccount(request.SalaryCents);
@@ -99,7 +99,7 @@ public static class AccountEndpoints
 
     public static async Task<IResult> GetAccounts(
         HttpContext httpContext,
-        IAccountService accountService,
+        AccountService accountService,
         [FromQuery] LedgerAccountType? accountType = null,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong timestampMax = 0
@@ -122,7 +122,7 @@ public static class AccountEndpoints
 
     public static async Task<IResult> GetAccount(
         ulong id,
-        IAccountService accountService,
+        AccountService accountService,
         ILogger<AccountService> logger
     )
     {
@@ -137,7 +137,7 @@ public static class AccountEndpoints
     public static async Task<IResult> GetAccountTransfers(
         ulong id,
         HttpContext httpContext,
-        IAccountService accountService,
+        AccountService accountService,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong timestampMax = 0,
         [FromQuery] TransferSide? side = null
@@ -161,7 +161,7 @@ public static class AccountEndpoints
     public static async Task<IResult> GetAccountLoans(
         ulong id,
         HttpContext httpContext,
-        IAccountService accountService
+        AccountService accountService
     )
     {
         var accounts = (await accountService.GetAccountLoans(id))

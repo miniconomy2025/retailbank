@@ -9,11 +9,11 @@ namespace RetailBank;
 
 public class SimulationRunner(
     ILogger<SimulationRunner> logger,
-    ILoanService loanService,
-    ITransferService transferService,
-    IAccountService accountService,
+    LoanService loanService,
+    TransferService transferService,
+    AccountService accountService,
     IOptions<SimulationOptions> options,
-    ISimulationControllerService simulationController
+    SimulationControllerService simulationController
 ) : BackgroundService
 {
     const ulong PayPeriod = 7 * 24 * 3600; // 1 week
@@ -51,10 +51,17 @@ public class SimulationRunner(
     {
         logger.LogInformation($"Running simulation step at {DateTime.UtcNow}");
 
-        const int BatchSize = 4096;
+        await PaySalaries();
 
-        // Pay Salaries
+        TimeSpan.FromSeconds(PayPeriod / options.Value.TimeScale / 2);
 
+        await PayInstallments();
+    }
+
+    private const int BatchSize = 4096;
+
+    private async Task PaySalaries()
+    {
         var transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, 0);
 
         while (transactionalAccounts.Count() > 0)
@@ -73,14 +80,13 @@ public class SimulationRunner(
                     logger.LogError($"Failed to pay salary to {account.Id}: {exception.Message}");
                 }
             }
-            
+
             transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, transactionalAccounts.Last().Timestamp - 1);
         }
+    }
 
-        TimeSpan.FromSeconds(PayPeriod / options.Value.TimeScale / 2);
-
-        // Charge Interest & Pay Installments
-
+    private async Task PayInstallments()
+    {
         var loanAccounts = await accountService.GetAccounts(LedgerAccountType.Loan, BatchSize, 0);
 
         while (loanAccounts.Count() > 0)

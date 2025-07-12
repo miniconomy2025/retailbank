@@ -2,15 +2,13 @@
 
 namespace RetailBank.Models.Interbank;
 
-public record CommercialBankNotification(
-    [property: JsonPropertyName("transaction_number")]
-    string TransactionNumber,
-    [property: JsonPropertyName("from_account_number")]
-    string FromAccountNumber,
+public record CreateCommercialTransferRequest(
     [property: JsonPropertyName("to_account_number")]
     string ToAccountNumber,
+    [property: JsonPropertyName("to_bank_name")]
+    string ToBankName,
     [property: JsonPropertyName("amount")]
-    UInt128 Amount,
+    decimal Amount,
     [property: JsonPropertyName("description")]
     string Description
 );

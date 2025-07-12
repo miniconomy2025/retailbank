@@ -28,45 +28,23 @@ public static class SimulationEndpoints
     }
 
     public static async Task<IResult> StartSimulation(
-        ISimulationControllerService simulationController,
+        SimulationControllerService simulationController,
         ILedgerRepository ledgerRepository,
-        StartSimulationRequest request
+        StartSimulationRequest request,
+        InterbankClient interbankClient
     )
     {
+        await ledgerRepository.InitialiseInternalAccounts();
+
         simulationController.Start(request.EpochStartTime * 1_000_000_000);
-
-        foreach (var variant in Enum.GetValues<BankId>())
-        {
-            try
-            {
-                await ledgerRepository.CreateAccount(new LedgerAccount((ulong)variant, LedgerAccountType.Internal));
-            }
-            catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
-        }
-
-        foreach (var variant in Enum.GetValues<LedgerAccountId>())
-        {
-            try
-            {
-                await ledgerRepository.CreateAccount(new LedgerAccount((ulong)variant, LedgerAccountType.Internal));
-            }
-            catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
-        }
-
-        var mainAccount = await ledgerRepository.GetAccount((ulong)BankId.Retail).ConfigureAwait(false);
-
-        if (mainAccount?.BalancePosted == 0)
-        {
-            await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.OwnersEquity, InitialBankAccountBalance, 0, TransferType.Transfer));
-        }
 
         return Results.NoContent();
     }
 
     public static async Task<IResult> ResetSimulation(
         ILogger<SimulationRunner> logger,
-        ISimulationControllerService simulationController,
-        ITigerBeetleClientProvider tbClientProvider
+        SimulationControllerService simulationController,
+        TigerBeetleClientProvider tbClientProvider
     )
     {
         simulationController.Stop();

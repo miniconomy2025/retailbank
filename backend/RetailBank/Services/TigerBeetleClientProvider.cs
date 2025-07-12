@@ -4,7 +4,7 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class TigerBeetleClientProvider : ITigerBeetleClientProvider
+public class TigerBeetleClientProvider
 {
     private string _tbAddress;
 

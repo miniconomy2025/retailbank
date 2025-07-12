@@ -5,7 +5,7 @@ using TigerBeetle;
 
 namespace RetailBank.Repositories;
 
-public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, ISimulationControllerService simulationControllerService) : ILedgerRepository
+public class TigerBeetleRepository(TigerBeetleClientProvider tbClientProvider, SimulationControllerService simulationControllerService) : ILedgerRepository
 {
     public const uint LedgerId = 1;
     public const ushort TransferCode = 1;
@@ -135,6 +135,29 @@ public class TigerBeetleRepository(ITigerBeetleClientProvider tbClientProvider, 
         ThrowBatchError(transferResults);
 
         return (idBalance, idClose);
+    }
+
+    public async Task InitialiseInternalAccounts()
+    {
+        foreach (var variant in Enum.GetValues<Bank>())
+        {
+            try
+            {
+                await CreateAccount(new LedgerAccount((ulong)variant, LedgerAccountType.Internal));
+            }
+            catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
+        }
+
+        foreach (var variant in Enum.GetValues<LedgerAccountId>())
+        {
+            try
+            {
+                await CreateAccount(new LedgerAccount((ulong)variant, LedgerAccountType.Internal));
+            }
+            catch (TigerBeetleResultException<CreateAccountResult> ex) when (ex.ErrorCode == CreateAccountResult.Exists) { }
+        }
+
+        var mainAccount = await GetAccount((ulong)Bank.Retail).ConfigureAwait(false);
     }
 
     private async Task TransferBatch(Transfer[] transfers)
