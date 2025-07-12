@@ -9,10 +9,10 @@ namespace RetailBank.Services;
 
 public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOptions> options)
 {
-    private async Task<string?> TryGetExternalAccount(string getAccountUrl, string createAccountUrl)
+    private async Task<string?> TryGetOrCreateExternalAccount(string getAccountUrl, string createAccountUrl)
     {
 
-        string externalAccountId;
+        string? externalAccountId;
 
         try
         {
@@ -28,7 +28,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         }
         catch
         {
-            return null;
+            externalAccountId = null;
         }
 
         if (string.IsNullOrWhiteSpace(externalAccountId))
@@ -45,26 +45,33 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
             }
             catch
             {
-                return null;
+                externalAccountId = null;
             }
         }
 
-        if (string.IsNullOrWhiteSpace(externalAccountId))
-            return null;
-        
         return externalAccountId;
     }
-
-    public async Task<bool> TryCreateExternalLoan(Bank bank)
+    
+    private async Task<decimal?> TryGetExternalAccountBalance(string getAccountBalanceUrl)
     {
-        if (!options.Value.Banks.TryGetValue(bank, out var bankDetails))
-            return false;
-        
+        try
+        {
+            var getAccountResponse = await httpClient.GetFromJsonAsync<GetCommercialAccountBalanceResponse>(getAccountBalanceUrl);
+            return getAccountResponse?.Balance;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task<bool> TryCreateExternalLoan(string issueLoanUrl, UInt128 loanAmountCents)
+    {
         try
         {
             var balanceResponse = await httpClient.PostAsJsonAsync(
-                bankDetails.IssueLoanUrl,
-                new CreateCommercialLoanRequest(options.Value.LoanAmountCents / 100.0m)
+                issueLoanUrl,
+                new CreateCommercialLoanRequest((decimal)loanAmountCents / 100.0m)
             );
 
             balanceResponse.EnsureSuccessStatusCode();
@@ -79,17 +86,30 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
 
     private async Task<NotificationResult> TryExternalTransferInternal(InterbankTransferBankDetails details, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
     {
-        var externalAccount = await TryGetExternalAccount(details.GetAccountUrl, details.CreateAccountUrl);
-
+        var externalAccount = await TryGetOrCreateExternalAccount(details.GetAccountUrl, details.CreateAccountUrl);
         if (string.IsNullOrWhiteSpace(externalAccount))
             return NotificationResult.Rejected;
+
+        var externalBalance = await TryGetExternalAccountBalance(details.GetAccountBalanceUrl);
+        if (externalBalance == null)
+            return NotificationResult.Rejected;
+
+        var externalBalanceCents = (UInt128)(100 * externalBalance);
+
+        // if external balance less than loan threshold then we issue a new loan
+        if (externalBalanceCents < options.Value.LoanAmountCents)
+        {
+            var loanSuccess = await TryCreateExternalLoan(details.IssueLoanUrl, options.Value.LoanAmountCents);
+            if (!loanSuccess)
+                return NotificationResult.Rejected;
+        }
 
         var transfer = new CreateCommercialTransferRequest(
             transactionId.ToHex(),
             externalAccount,
             to.ToString(),
-            amount,
-            reference.ToString()
+            (decimal)amount / 100.0m,
+            $"Retail Transfer {from}, Reference: {reference}"
         );
 
         HttpResponseMessage response;
@@ -129,13 +149,5 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         }
 
         return result;
-    }
-
-    public async Task GetExternalAccount(Bank bank)
-    {
-        if (!options.Value.Banks.TryGetValue(bank, out var bankDetails))
-            return;
-
-        var account = await httpClient.GetFromJsonAsync<CommercialAccountNumberResponse>(bankDetails.GetAccountUrl);
     }
 }

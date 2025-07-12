@@ -10,7 +10,7 @@ public record CreateCommercialTransferRequest(
     [property: JsonPropertyName("to_account_number")]
     string ToAccountNumber,
     [property: JsonPropertyName("amount")]
-    UInt128 Amount,
+    decimal Amount,
     [property: JsonPropertyName("description")]
     string Description
 );

@@ -6,5 +6,5 @@ public record CreateCommercialLoanResponse(
     [property: JsonPropertyName("success")]
     bool Success,
     [property: JsonPropertyName("loan_number")]
-    decimal LoanNumber
+    string LoanNumber
 );

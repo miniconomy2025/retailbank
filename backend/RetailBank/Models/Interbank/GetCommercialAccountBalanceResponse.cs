@@ -4,5 +4,5 @@ namespace RetailBank.Models.Interbank;
 
 public record GetCommercialAccountBalanceResponse(
     [property: JsonPropertyName("balance")]
-    string Balance
+    decimal Balance
 );
