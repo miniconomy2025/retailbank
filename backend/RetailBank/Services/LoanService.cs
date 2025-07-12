@@ -1,16 +1,16 @@
 using System.Security.Cryptography;
+using Microsoft.Extensions.Options;
 using RetailBank.Exceptions;
+using RetailBank.Extensions;
 using RetailBank.Models.Ledger;
+using RetailBank.Models.Options;
 using RetailBank.Repositories;
 using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
+public class LoanService(ILedgerRepository ledgerRepository, IOptions<LoanOptions> options)
 {
-    private const ushort InterestRate = 10;
-    private const ushort LoanPeriod = 60;
-
     public async Task<UInt128> CreateLoanAccount(UInt128 debitAccountNumber, ulong loanAmount)
     {
         {
@@ -22,7 +22,7 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
 
         var accountNumber = GenerateLoanAccountNumber();
 
-        var installment = CalculateInstallment(loanAmount, InterestRate, LoanPeriod);
+        var installment = CalculateInstallment(loanAmount, options.Value.AnnualInterestRatePercentage, options.Value.LoanPeriodMonths);
 
         await ledgerRepository.CreateAccount(
             new LedgerAccount(
@@ -34,7 +34,7 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
 
         await ledgerRepository.TransferLinked([
             new LedgerTransfer(ID.Create(), accountNumber, debitAccountNumber, loanAmount, 0, TransferType.Transfer),
-            new LedgerTransfer(ID.Create(), (ulong)LedgerAccountId.LoanControl, (ulong)BankId.Retail, loanAmount, 0, TransferType.Transfer),
+            new LedgerTransfer(ID.Create(), (ulong)LedgerAccountId.LoanControl, (ulong)Bank.Retail, loanAmount, 0, TransferType.Transfer),
         ]);
 
         return accountNumber;
@@ -59,7 +59,7 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         var loanBalance = loanAccount.BalancePosted;
         var amountDue = Int128.Min(installment, loanBalance);
 
-        var interestDue = loanAccount.BalancePosted * InterestRate / 12 / 100;
+        var interestDue = (Int128)((decimal)loanAccount.BalancePosted * options.Value.AnnualInterestRatePercentage / 12.0m / 100.0m);
 
         if (-loanDebitAccount.BalancePosted < amountDue)
         {
@@ -69,16 +69,16 @@ public class LoanService(ILedgerRepository ledgerRepository) : ILoanService
         }
 
         await ledgerRepository.TransferLinked([
-            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)(amountDue - interestDue), 0, TransferType.Transfer),
+            new LedgerTransfer(ID.Create(), (ulong)Bank.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)(amountDue - interestDue), 0, TransferType.Transfer),
             new LedgerTransfer(ID.Create(), loanDebitAccountId, loanAccount.Id, (UInt128)(amountDue - interestDue), 0, TransferType.Transfer),
-            new LedgerTransfer(ID.Create(), (ulong)BankId.Retail, (ulong)LedgerAccountId.InterestIncome, (UInt128)interestDue, 0, TransferType.Transfer)
+            new LedgerTransfer(ID.Create(), (ulong)Bank.Retail, (ulong)LedgerAccountId.InterestIncome, (UInt128)interestDue, 0, TransferType.Transfer)
         ]);
     }
 
-    private static uint CalculateInstallment(ulong principal, float annualRatePercent, int months)
+    private static uint CalculateInstallment(ulong principal, decimal annualRatePercent, uint months)
     {
-        var monthlyRate = annualRatePercent / 100 / 12;
-        var denominator = 1 - Math.Pow(1 + (double)monthlyRate, -months);
+        var monthlyRate = annualRatePercent / 100.0m / 12.0m;
+        var denominator = 1 - (1.0m + monthlyRate).Pow((int)-months);
         return (uint)Math.Ceiling(principal * monthlyRate / denominator);
     }
 

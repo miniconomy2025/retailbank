@@ -4,7 +4,7 @@ using RetailBank.Exceptions;
 
 namespace RetailBank.Services;
 
-public class IdempotencyCache(IMemoryCache cache) : IIdempotencyCache
+public class IdempotencyCache(IMemoryCache cache)
 {
     /// <summary>
     /// Returns true if a key is already present, and holds it for some length of time.
@@ -13,7 +13,7 @@ public class IdempotencyCache(IMemoryCache cache) : IIdempotencyCache
     {
         var key = JsonSerializer.Serialize(obj);
         var present = cache.Get(key) != null;
-        cache.Set(key, true, DateTimeOffset.Now.AddHours(1));
+        cache.Set(key, true, DateTimeOffset.Now.AddDays(1));
         return present;
     }
 

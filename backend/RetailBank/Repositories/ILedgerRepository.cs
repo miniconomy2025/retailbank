@@ -16,4 +16,5 @@ public interface ILedgerRepository
     public Task<IEnumerable<UInt128>> TransferLinked(IEnumerable<LedgerTransfer> transfers);
 
     public Task<(UInt128, UInt128)> BalanceAndCloseCredit(UInt128 debitAccountId, UInt128 creditAccountId);
+    public Task InitialiseInternalAccounts();
 }

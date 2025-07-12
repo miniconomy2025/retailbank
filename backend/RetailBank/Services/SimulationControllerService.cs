@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Options;
 using RetailBank.Models.Options;
+using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
-public class SimulationControllerService(IOptions<SimulationOptions> options) : ISimulationControllerService
+public class SimulationControllerService(IOptions<SimulationOptions> options)
 {
     public bool IsRunning { get; private set; } = false;
     public ulong StartTime { get; private set; } = 0;
