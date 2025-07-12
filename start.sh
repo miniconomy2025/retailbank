@@ -1,34 +1,6 @@
 #!/bin/bash
 set -e
-sudo apt update && sudo apt install -y jq && sudo apt-get install -y unzip && sudo apt install -y openjdk-17-jre-headless && sudo apt install unzip
-
-
-# install aws cli if necessary
-if command -v aws &> /dev/null; then
-  echo "AWS CLI is already installed at: $(which aws)"
-
-else
-  echo "Installing AWS CLI..."
-  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-  unzip -o awscliv2.zip
-  sudo ./aws/install --update
-fi
-
-# Pull the secrets using the aws cli
-aws secretsmanager get-secret-value \
-  --secret-id server-cert \
-  --query SecretString \
-  --output text > /etc/ssl/certs/server.crt
-
-aws secretsmanager get-secret-value \
-  --secret-id server-key \
-  --query SecretString \
-  --output text > /etc/ssl/private/server.key
-
-aws secretsmanager get-secret-value \
-  --secret-id ca-cert \
-  --query SecretString \
-  --output text > /etc/ssl/certs/client-ca.crt
+sudo apt update && sudo apt install -y jq unzip openjdk-17-jre-headless
 
 APP_NAME="RetailBank"
 APP_USER="ubuntu"
@@ -135,8 +107,8 @@ server {
 server {
     listen 443 ssl;
     server_name $API_DOMAIN;
-    ssl_certificate     /etc/ssl/certs/server.crt;
-    ssl_certificate_key /etc/ssl/private/server.key;
+    ssl_certificate     /etc/letsencrypt/live/retail-bank-api.projects.bbdgrad.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/retail-bank-api.projects.bbdgrad.com/privkey.pem;
 
     ssl_client_certificate /etc/ssl/certs/client-ca.crt;
     ssl_verify_client on;
