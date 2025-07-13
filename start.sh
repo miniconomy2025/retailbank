@@ -54,7 +54,6 @@ sudo systemctl status "$SERVICE_NAME" --no-pager
 
 # setup nginx and https
 echo "Setting up nginx and https"
-
 set -e
 FE_DOMAIN="retail-bank.projects.bbdgrad.com"
 API_DOMAIN="retail-bank-api.projects.bbdgrad.com"
@@ -74,8 +73,16 @@ sudo apt install -y nginx certbot python3-certbot-nginx
 
 echo "Creating temporary HTTP-only nginx config for $FE_DOMAIN..."
 sudo tee $NGINX_CONF > /dev/null <<EOF
-server {
 
+map $ssl_client_s_dn $is_valid_ou {
+    default no;
+    ~OU=sumsang-company yes;
+    ~OU=retail-bank yes;
+    ~OU=commercial-bank yes;
+    ~OU=pear-company yes;
+    ~OU=thoh yes;
+}
+server {
     listen 80;
     server_name $FE_DOMAIN;
 
@@ -115,6 +122,9 @@ server {
 
     error_log /var/log/nginx/mtls-error.log info;
 
+    if ($is_valid_ou = no) {
+        return 403;
+    }
 
     location / {
         proxy_pass http://localhost:5000;
