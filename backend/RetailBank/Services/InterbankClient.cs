@@ -6,7 +6,7 @@ using RetailBank.Models.Options;
 
 namespace RetailBank.Services;
 
-public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOptions> options)
+public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOptions> options, ILogger<InterbankClient> logger)
 {
     private async Task<decimal?> TryGetExternalAccountBalance(string getAccountUrl, string createAccountUrl)
     {
@@ -17,8 +17,9 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
             if (createAccountResponse.StatusCode != HttpStatusCode.Conflict)
                 createAccountResponse.EnsureSuccessStatusCode();
         }
-        catch
+        catch (Exception e)
         {
+            logger.LogError($"Failed to create commercial bank account balance: {e}");
             return null;
         }
 
@@ -34,25 +35,13 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
 
             return getAccountBody.NetBalance;
         }
-        catch
+        catch (Exception e)
         {
+            logger.LogError($"Failed to check commercial bank account balance: {e}");
             return null;
         }
     }
     
-    private async Task<decimal?> TryGetExternalAccountBalance(string getAccountBalanceUrl)
-    {
-        try
-        {
-            var getAccountResponse = await httpClient.GetFromJsonAsync<GetCommercialAccountBalanceResponse>(getAccountBalanceUrl);
-            return getAccountResponse?.Balance;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     private async Task<bool> TryCreateExternalLoan(string issueLoanUrl, UInt128 loanAmountCents)
     {
         try
@@ -66,13 +55,14 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
 
             return true;
         }
-        catch
+        catch (Exception e)
         {
+            logger.LogError($"Failed to create commercial bank loan: {e}");
             return false;
         }
     }
 
-    private async Task<NotificationResult> TryExternalTransferInternal(InterbankTransferBankDetails details, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
+    private async Task<NotificationResult> TryExternalTransferInternal(InterbankTransferBankDetails details, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
     {
         var externalBalanceDecimal = await TryGetExternalAccountBalance(details.GetAccountUrl, details.CreateAccountUrl);
         if (externalBalanceDecimal == null)
@@ -100,8 +90,9 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         {
             response = await httpClient.PostAsJsonAsync(details.TransferUrl, transfer);
         }
-        catch
+        catch (Exception e)
         {
+            logger.LogError($"Failed to transfer to commercial bank: {e}");
             return NotificationResult.Failed;
         }
 
@@ -114,7 +105,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         return NotificationResult.Failed;
     }
 
-    public async Task<NotificationResult> TryExternalTransfer(Bank bank, UInt128 transactionId, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
+    public async Task<NotificationResult> TryExternalTransfer(Bank bank, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
     {
         if (!options.Value.Banks.TryGetValue(bank, out var bankDetails))
             return NotificationResult.Rejected;
@@ -123,7 +114,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
 
         for (int i = 0; i < options.Value.RetryCount; i++)
         {
-            result = await TryExternalTransferInternal(bankDetails, transactionId, from, to, amount, reference).ConfigureAwait(false);
+            result = await TryExternalTransferInternal(bankDetails, from, to, amount, reference).ConfigureAwait(false);
 
             if (result == NotificationResult.Succeeded)
                 return result;

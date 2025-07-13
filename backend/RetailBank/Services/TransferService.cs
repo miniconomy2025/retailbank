@@ -71,7 +71,7 @@ public class TransferService(LedgerRepository ledgerRepository, InterbankClient 
         var pendingTransfer = new LedgerTransfer(ID.Create(), payerAccountId, externalAccountId, amount, reference, TransferType.StartTransfer);
         var pendingId = await ledgerRepository.Transfer(pendingTransfer);
 
-        var result = await interbankClient.TryExternalTransfer(Bank.Commercial, pendingId, payerAccountId, externalAccountId, amount, reference);
+        var result = await interbankClient.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference);
 
         switch (result)
         {
