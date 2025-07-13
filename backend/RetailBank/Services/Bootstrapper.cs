@@ -13,16 +13,20 @@ public static class Bootstrapper
         services.AddOptions<LoanOptions>().BindConfiguration(LoanOptions.Section);
         services.AddOptions<InterbankTransferOptions>().BindConfiguration(InterbankTransferOptions.Section);
 
-        services.AddHttpClient<InterbankClient>().ConfigurePrimaryHttpMessageHandler(provider =>
+        services.AddHttpClient<InterbankClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "RetailBank/1.0");
+        }).ConfigurePrimaryHttpMessageHandler(provider =>
         {
             var options = provider.GetRequiredService<IOptions<InterbankTransferOptions>>();
-            
-            var handler = new HttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
-            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-            handler.ClientCertificates.Add(X509Certificate2.CreateFromPemFile(
-                options.Value.ClientCertificatePath,
-                options.Value.ClientCertificateKeyPath
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+                ClientCertificateOptions = ClientCertificateOption.Manual
+            };
+            handler.ClientCertificates.Add(new X509Certificate2(
+                options.Value.ClientCertificatePath
             ));
             return handler;
         });
