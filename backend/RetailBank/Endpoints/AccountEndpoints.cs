@@ -11,7 +11,7 @@ public static class AccountEndpoints
     {
         routes
             .MapPost("/accounts", CreateTransactionalAccount)
-            .Produces<CreateAccountResponse>(StatusCodes.Status200OK)
+            .Produces<CreateTransactionalAccountResponse>(StatusCodes.Status200OK)
             .WithSummary("Create Transactional Account")
             .WithDescription(
                 """
@@ -94,7 +94,7 @@ public static class AccountEndpoints
     {
         var accountId = await accountService.CreateTransactionalAccount(request.SalaryCents);
 
-        return Results.Ok(new CreateAccountResponse(accountId.ToString()));
+        return Results.Ok(new CreateTransactionalAccountResponse(accountId.ToString()));
     }
 
     public static async Task<IResult> GetAccounts(

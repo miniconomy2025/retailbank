@@ -1,3 +1,9 @@
-﻿namespace RetailBank.Models.Dtos;
+﻿using System.ComponentModel.DataAnnotations;
 
-public record CreateTransactionAccountRequest(ulong SalaryCents);
+namespace RetailBank.Models.Dtos;
+
+public record CreateTransactionAccountRequest(
+    [property: Required]
+    [property: Range(0, ulong.MaxValue)]
+    ulong SalaryCents
+);

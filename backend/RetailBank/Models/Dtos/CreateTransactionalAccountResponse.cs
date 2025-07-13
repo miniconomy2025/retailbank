@@ -3,12 +3,9 @@ using RetailBank.Validation;
 
 namespace RetailBank.Models.Dtos;
 
-public record CreateLoanAccountRequest(
-    [property: Required]
-    [property: Range(1, ulong.MaxValue)]
-    ulong LoanAmountCents,
+public record CreateTransactionalAccountResponse(
     [property: Required]
     [property: Length(12, 12)]
     [property: RegularExpression(ValidationConstants.TransactionalAccountNumber)]
-    string DebtorAccountId
+    string AccountId
 );
