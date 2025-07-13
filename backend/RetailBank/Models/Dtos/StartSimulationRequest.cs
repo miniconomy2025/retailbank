@@ -4,6 +4,6 @@ namespace RetailBank.Models.Dtos;
 
 public record StartSimulationRequest(
     [property: Required]
-    [property: Range(0, ulong.MaxValue)]
+    [property: Range(1, ulong.MaxValue)]
     ulong EpochStartTime
 );

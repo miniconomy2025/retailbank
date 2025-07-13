@@ -3,6 +3,7 @@ using CliWrap;
 using CliWrap.Buffered;
 using RetailBank.Repositories;
 using RetailBank.Models.Dtos;
+using FluentValidation;
 
 namespace RetailBank.Endpoints;
 
@@ -27,12 +28,15 @@ public static class SimulationEndpoints
         SimulationControllerService simulationController,
         LedgerRepository ledgerRepository,
         StartSimulationRequest request,
-        InterbankClient interbankClient
+        InterbankClient interbankClient,
+        IValidator<StartSimulationRequest> validator
     )
     {
+        validator.ValidateAndThrow(request);
+
         await ledgerRepository.InitialiseInternalAccounts();
 
-        simulationController.Start(request.EpochStartTime);
+        simulationController.Start(request.EpochStartTime * 1000);
 
         return Results.NoContent();
     }

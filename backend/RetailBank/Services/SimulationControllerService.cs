@@ -6,7 +6,7 @@ namespace RetailBank.Services;
 public class SimulationControllerService(IOptions<SimulationOptions> options)
 {
     public bool IsRunning { get; private set; } = false;
-    public ulong UnixStartTime { get; private set; } = 1752419842000;
+    public ulong UnixStartTime { get; private set; }
     public uint TimeScale => options.Value.TimeScale;
 
     public void Start(ulong startTime)
