@@ -15,11 +15,19 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
             var createAccountResponse = await httpClient.PostAsync(createAccountUrl, null);
          
             if (createAccountResponse.StatusCode != HttpStatusCode.Conflict)
+            {
+                if (!createAccountResponse.IsSuccessStatusCode)
+                {
+                    var response = await createAccountResponse.Content.ReadAsStringAsync();
+                    logger.LogError($"Invalid response from commercial bank while creating account: {response}");
+                }
+                
                 createAccountResponse.EnsureSuccessStatusCode();
+            }
         }
         catch (Exception e)
         {
-            logger.LogError($"Failed to create commercial bank account balance: {e}");
+            logger.LogError($"Failed to create commercial bank account: {e}");
             return null;
         }
 
@@ -28,7 +36,14 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
             var getAccountResponse = await httpClient.GetAsync(getAccountUrl);
 
             if (getAccountResponse.StatusCode != HttpStatusCode.NotFound)
+            {
+                if (!getAccountResponse.IsSuccessStatusCode)
+                {
+                    var response = await getAccountResponse.Content.ReadAsStringAsync();
+                    logger.LogError($"Invalid response from commercial bank while getting account balance: {response}");
+                }
                 getAccountResponse.EnsureSuccessStatusCode();
+            }
 
             var getAccountBody = await getAccountResponse.Content.ReadFromJsonAsync<GetCommercialAccountResponse>();
             ArgumentNullException.ThrowIfNull(getAccountBody);
@@ -46,12 +61,18 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
     {
         try
         {
-            var balanceResponse = await httpClient.PostAsJsonAsync(
+            var loanResponse = await httpClient.PostAsJsonAsync(
                 issueLoanUrl,
                 new CreateCommercialLoanRequest((decimal)loanAmountCents / 100.0m)
             );
 
-            balanceResponse.EnsureSuccessStatusCode();
+            if (!loanResponse.IsSuccessStatusCode)
+            {
+                var response = await loanResponse.Content.ReadAsStringAsync();
+                logger.LogError($"Invalid response from commercial bank while issuing loan: {response}");
+            }
+
+            loanResponse.EnsureSuccessStatusCode();
 
             return true;
         }
