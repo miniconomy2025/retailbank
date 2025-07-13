@@ -113,7 +113,7 @@ server {
 
     error_log /var/log/nginx/mtls-error.log info;
 
-    if ($is_valid_ou = no) {
+    if ($is_valid_ou = "no") {
         return 403;
     }
 
