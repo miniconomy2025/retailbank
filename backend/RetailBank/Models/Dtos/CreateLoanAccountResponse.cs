@@ -6,6 +6,6 @@ namespace RetailBank.Models.Dtos;
 public record CreateLoanAccountResponse(
     [property: Required]
     [property: Length(13, 13)]
-    [property: RegularExpression(ValidationConstants.LoanAccountNumber)]
+    [property: RegularExpression(ValidationConstants.Base10)]
     string AccountId
 );

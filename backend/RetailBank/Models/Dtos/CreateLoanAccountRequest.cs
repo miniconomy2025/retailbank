@@ -9,6 +9,6 @@ public record CreateLoanAccountRequest(
     ulong LoanAmountCents,
     [property: Required]
     [property: Length(12, 12)]
-    [property: RegularExpression(ValidationConstants.TransactionalAccountNumber)]
+    [property: RegularExpression(ValidationConstants.Base10)]
     string DebtorAccountId
 );

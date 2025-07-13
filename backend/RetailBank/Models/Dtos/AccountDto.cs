@@ -6,7 +6,7 @@ namespace RetailBank.Models.Dtos;
 
 public record AccountDto(
     [property: Required]
-    [property: Length(4, 12)]
+    [property: Length(4, 13)]
     [property: RegularExpression(ValidationConstants.AccountNumber)]
     string Id,
     [property: Required]
@@ -24,10 +24,8 @@ public record AccountDto(
     [property: Range(0, ValidationConstants.UInt128Max)]
     UInt128 CreditsPosted,
     [property: Required]
-    [property: Range(0, ValidationConstants.UInt128Max)]
     Int128 BalancePending,
     [property: Required]
-    [property: Range(0, ValidationConstants.UInt128Max)]
     Int128 BalancePosted,
     [property: Required]
     bool Closed,
