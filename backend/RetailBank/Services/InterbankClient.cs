@@ -114,16 +114,19 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         catch (Exception e)
         {
             logger.LogError($"Failed to transfer to commercial bank: {e}");
-            return NotificationResult.Failed;
+            return NotificationResult.UnknownFailure;
         }
 
-        if ((int)response.StatusCode / 100 == 2)
+        if (response.IsSuccessStatusCode)
             return NotificationResult.Succeeded;
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return NotificationResult.AccountNotFound;
 
         if ((int)response.StatusCode / 100 == 4)
             return NotificationResult.Rejected;
 
-        return NotificationResult.Failed;
+        return NotificationResult.UnknownFailure;
     }
 
     public async Task<NotificationResult> TryExternalTransfer(Bank bank, UInt128 from, UInt128 to, UInt128 amount, ulong reference)

@@ -2,7 +2,8 @@
 
 public enum NotificationResult
 {
-    Succeeded,
-    Rejected,
-    Failed,
+    UnknownFailure = 0,
+    Succeeded = 1,
+    Rejected = 2,
+    AccountNotFound = 4 | Rejected,
 }
