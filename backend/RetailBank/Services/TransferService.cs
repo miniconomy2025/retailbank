@@ -73,44 +73,41 @@ public class TransferService(LedgerRepository ledgerRepository, InterbankClient 
 
         var result = await interbankClient.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference);
 
-        if ((result | NotificationResult.Succeeded) > 0)
+        switch (result)
         {
-            var completionTransfer = pendingTransfer with
-            {
-                Id = ID.Create(),
-                ParentId = pendingId,
-                TransferType = TransferType.CompleteTransfer,
-            };
+            case NotificationResult.Succeeded:
+                var completionTransfer = pendingTransfer with
+                {
+                    Id = ID.Create(),
+                    ParentId = pendingId,
+                    TransferType = TransferType.CompleteTransfer,
+                };
 
-            var completedId = await ledgerRepository.Transfer(completionTransfer);
-            return completedId;
-        }
-        else if ((result | NotificationResult.Rejected) > 0)
-        {
-            var cancellationTransfer = pendingTransfer with
-            {
-                Id = ID.Create(),
-                ParentId = pendingId,
-                TransferType = TransferType.CancelTransfer,
-            };
+                var completedId = await ledgerRepository.Transfer(completionTransfer);
+                return completedId;
+            case NotificationResult.Rejected | NotificationResult.AccountNotFound:
+                var cancellationTransfer = pendingTransfer with
+                {
+                    Id = ID.Create(),
+                    ParentId = pendingId,
+                    TransferType = TransferType.CancelTransfer,
+                };
 
-            await ledgerRepository.Transfer(cancellationTransfer);
+                await ledgerRepository.Transfer(cancellationTransfer);
 
-            if ((result | NotificationResult.AccountNotFound) > 0)
-                throw new AccountNotFoundException(externalAccountId);
+                if (result == NotificationResult.AccountNotFound)
+                    throw new AccountNotFoundException(externalAccountId);
 
-            throw new ExternalTransferFailedException();
-        }
-        else
-        {
-            // We have not received a success or rejection response
-            // from the external service, so we cannot know whether
-            // the external service has processed the transaction
-            // or not. The transfer must be left as pending and then 
-            // must be retried or manually resolved later.
-            // This transfer will remain pending, and will have to 
-            // be resolved by a business process.
-            throw new ExternalTransferFailedException();
+                throw new ExternalTransferFailedException();
+            default:
+                // We have not received a success or rejection response
+                // from the external service, so we cannot know whether
+                // the external service has processed the transaction
+                // or not. The transfer must be left as pending and then 
+                // must be retried or manually resolved later.
+                // This transfer will remain pending, and will have to 
+                // be resolved by a business process.
+                throw new ExternalTransferFailedException();
         }
     }
 
