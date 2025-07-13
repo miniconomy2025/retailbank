@@ -83,7 +83,6 @@ public class TransferService(ILedgerRepository ledgerRepository, InterbankClient
                 };
                 
                 var completedId = await ledgerRepository.Transfer(completionTransfer);
-                
                 return completedId;
             case NotificationResult.Rejected:
                 var cancellationTransfer = pendingTransfer with
