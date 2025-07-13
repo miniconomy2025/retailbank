@@ -73,15 +73,6 @@ sudo apt install -y nginx certbot python3-certbot-nginx
 
 echo "Creating temporary HTTP-only nginx config for $FE_DOMAIN..."
 sudo tee $NGINX_CONF > /dev/null <<EOF
-
-map $ssl_client_s_dn $is_valid_ou {
-    default no;
-    ~OU=sumsang-company yes;
-    ~OU=retail-bank yes;
-    ~OU=commercial-bank yes;
-    ~OU=pear-company yes;
-    ~OU=thoh yes;
-}
 server {
     listen 80;
     server_name $FE_DOMAIN;
@@ -129,6 +120,18 @@ server {
     location / {
         proxy_pass http://localhost:5000;
     }
+}
+EOF
+
+echo "Trying to add the OU authorisation to the nginx config. Please work bruv"
+sudo tee /etc/nginx/conf.d/ssl_ou_map.conf > /dev/null <<EOF
+map \$ssl_client_s_dn \$is_valid_ou {
+    default no;
+    ~OU=sumsang-company yes;
+    ~OU=retail-bank yes;
+    ~OU=commercial-bank yes;
+    ~OU=pear-company yes;
+    ~OU=thoh yes;
 }
 EOF
 
