@@ -15,7 +15,16 @@ body {
 }
 
 .transfer-table, .accounts-table {
-  a {
+  a:has(span) span {
+    color: #048;
+    text-decoration: underline;
+  }
+
+  a:hover:has(span) span:first-child {
+    text-decoration: none;
+  }
+
+  a:not(:has(span)) {
     color: #048;
     text-decoration: underline;
 

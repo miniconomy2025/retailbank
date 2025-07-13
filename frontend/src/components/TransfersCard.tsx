@@ -27,12 +27,12 @@ export default function TransfersCard({
               <td className="px-2 py-2">
                 <Link to={accountLink(item.debitAccountId, item.transferId)}>
                   <span className="font-mono">{item.debitAccountId}</span>
-                  <small className="ml-2 text-gray-400">{accountName(item.debitAccountId)}</small>                </Link>
+                  <small className="ml-2 text-gray-500">{accountName(item.debitAccountId)}</small>                </Link>
               </td>
               <td className="px-2 py-2">
                 <Link to={accountLink(item.creditAccountId, item.transferId)}>
                   <span className="font-mono">{item.creditAccountId}</span>
-                  <small className="ml-2 text-gray-400">{accountName(item.creditAccountId)}</small>                </Link>
+                  <small className="ml-2 text-gray-500">{accountName(item.creditAccountId)}</small>                </Link>
               </td>
               <td
                 className={`px-2 py-2 font-mono ${
