@@ -24,11 +24,11 @@ public static class Bootstrapper
             var handler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
-                //ClientCertificateOptions = ClientCertificateOption.Manual
+                ClientCertificateOptions = ClientCertificateOption.Manual
             };
-            //handler.ClientCertificates.Add(new X509Certificate2(
-            //    options.Value.ClientCertificatePath
-            //));
+            handler.ClientCertificates.Add(new X509Certificate2(
+                options.Value.ClientCertificatePath
+            ));
             return handler;
         });
 
