@@ -6,16 +6,16 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class TransferService(ILedgerRepository ledgerRepository, InterbankClient interbankClient)
+public class TransferService(LedgerRepository ledgerRepository, InterbankClient interbankClient)
 {
     public async Task<LedgerTransfer?> GetTransfer(UInt128 id)
     {
         return await ledgerRepository.GetTransfer(id);
     }
 
-    public async Task<IEnumerable<LedgerTransfer>> GetTransfers(uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerTransfer>> GetTransfers(uint limit, ulong cursorMax, ulong? reference)
     {
-        return await ledgerRepository.GetTransfers(limit, timestampMax);
+        return await ledgerRepository.GetTransfers(limit, cursorMax, reference);
     }
 
     public async Task<UInt128> Transfer(UInt128 payerAccountId, UInt128 payeeAccountId, UInt128 amount, ulong reference)

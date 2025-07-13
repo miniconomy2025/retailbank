@@ -1,5 +1,4 @@
 ﻿using RetailBank.Repositories;
-using RetailBank.Services;
 using TigerBeetle;
 
 namespace RetailBank.Models.Ledger;
@@ -13,13 +12,13 @@ public record LedgerAccount(
     UInt128 DebitsPosted = default,
     UInt128 CreditsPending = default,
     UInt128 CreditsPosted = default,
-    ulong Timestamp = 0
+    ulong Cursor = 0
 )
 {
     public Int128 BalancePending => (Int128)DebitsPending - (Int128)CreditsPending;
     public Int128 BalancePosted => (Int128)DebitsPosted - (Int128)CreditsPosted;
 
-    public LedgerAccount(Account account, ulong startTime, uint timeScale)
+    public LedgerAccount(Account account)
         : this(
             account.Id,
             (LedgerAccountType)account.Code,
@@ -43,8 +42,8 @@ public record LedgerAccount(
         {
             Id = Id,
             Code = (ushort)AccountType,
-            Ledger = TigerBeetleRepository.LedgerId,
-            Timestamp = Timestamp,
+            Ledger = LedgerRepository.LedgerId,
+            Timestamp = Cursor,
             UserData128 = DebitOrder?.DebitAccountId ?? 0,
             UserData64 = DebitOrder?.Amount ?? 0,
             Flags = AccountType.ToAccountFlags() | closedFlag,

@@ -102,20 +102,19 @@ public static class AccountEndpoints
         AccountService accountService,
         [FromQuery] LedgerAccountType? accountType = null,
         [FromQuery] uint limit = 25,
-        [FromQuery] ulong timestampMax = 0
+        [FromQuery] ulong cursorMax = 0
     )
     {
-        var accounts = (await accountService.GetAccounts(accountType, limit, timestampMax))
-            .Select(account => new AccountDto(account));
+        var accounts = await accountService.GetAccounts(accountType, limit, cursorMax);
 
         string? nextUri = null;
         if (accounts.Count() > 0 && httpContext.Request.Path.HasValue)
         {
-            var newMax = accounts.Last().CreatedAt - 1;
-            nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
+            var newMax = accounts.Last().Cursor - 1;
+            nextUri = $"{httpContext.Request.Path}?limit={limit}&cursorMax={newMax}";
         }
 
-        var pagination = new CursorPagination<AccountDto>(accounts, nextUri);
+        var pagination = new CursorPagination<AccountDto>(accounts.Select(account => new AccountDto(account)), nextUri);
 
         return Results.Ok(pagination);
     }
@@ -139,21 +138,21 @@ public static class AccountEndpoints
         HttpContext httpContext,
         AccountService accountService,
         [FromQuery] uint limit = 25,
-        [FromQuery] ulong timestampMax = 0,
+        [FromQuery] ulong cursorMax = 0,
+        [FromQuery] ulong? reference = null,
         [FromQuery] TransferSide? side = null
     )
     {
-        var transfers = (await accountService.GetAccountTransfers(id, limit, timestampMax, side))
-            .Select(transfer => new TransferDto(transfer));
+        var transfers = await accountService.GetAccountTransfers(id, limit, cursorMax, reference, side);
             
         string? nextUri = null;
         if (transfers.Count() > 0 && httpContext.Request.Path.HasValue)
         {
-            var newMax = transfers.Last().Timestamp - 1;
-            nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
+            var newMax = transfers.Last().Cursor - 1;
+            nextUri = $"{httpContext.Request.Path}?limit={limit}&cursorMax={newMax}";
         }
 
-        var pagination = new CursorPagination<TransferDto>(transfers, nextUri);
+        var pagination = new CursorPagination<TransferDto>(transfers.Select(transfer => new TransferDto(transfer)), nextUri);
 
         return Results.Ok(pagination);
     }

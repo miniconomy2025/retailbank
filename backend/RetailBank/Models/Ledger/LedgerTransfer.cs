@@ -12,10 +12,10 @@ public record LedgerTransfer(
     ulong Reference,
     TransferType TransferType,
     UInt128? ParentId = null,
-    ulong Timestamp = 0
+    ulong Cursor = 0
 )
 {
-    public LedgerTransfer(Transfer transfer, ulong startTime, uint timeScale) : this(
+    public LedgerTransfer(Transfer transfer) : this(
         transfer.Id,
         transfer.DebitAccountId,
         transfer.CreditAccountId,
@@ -59,8 +59,8 @@ public record LedgerTransfer(
             UserData128 = supplementaryAccountId,
             UserData64 = Reference,
             UserData32 = 0,
-            Ledger = TigerBeetleRepository.LedgerId,
-            Code = TigerBeetleRepository.TransferCode,
+            Ledger = LedgerRepository.LedgerId,
+            Code = LedgerRepository.TransferCode,
             PendingId = ParentId ?? 0,
             Flags = TransferType.ToTransferFlags() | linkedFlag,
         };

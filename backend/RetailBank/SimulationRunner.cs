@@ -12,7 +12,6 @@ public class SimulationRunner(
     LoanService loanService,
     TransferService transferService,
     AccountService accountService,
-    IOptions<SimulationOptions> options,
     SimulationControllerService simulationController
 ) : BackgroundService
 {
@@ -20,7 +19,7 @@ public class SimulationRunner(
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (options.Value.TimeScale == 0)
+        if (simulationController.TimeScale == 0)
             throw new InvalidOperationException("Invalid time scale '0'.");
 
         logger.LogInformation("Starting simulation");
@@ -32,7 +31,7 @@ public class SimulationRunner(
                 if (simulationController.IsRunning)
                 {
                     await RunSimulationStepAsync();
-                    await Task.Delay(TimeSpan.FromSeconds(PayPeriod / options.Value.TimeScale / 2), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(PayPeriod / simulationController.TimeScale / 2), stoppingToken);
                     continue;
                 }
 
@@ -53,7 +52,7 @@ public class SimulationRunner(
 
         await PaySalaries();
 
-        TimeSpan.FromSeconds(PayPeriod / options.Value.TimeScale / 2);
+        TimeSpan.FromSeconds(PayPeriod / simulationController.TimeScale / 2);
 
         await PayInstallments();
     }
@@ -81,7 +80,7 @@ public class SimulationRunner(
                 }
             }
 
-            transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, transactionalAccounts.Last().Timestamp - 1);
+            transactionalAccounts = await accountService.GetAccounts(LedgerAccountType.Transactional, BatchSize, transactionalAccounts.Last().Cursor - 1);
         }
     }
 
@@ -108,7 +107,7 @@ public class SimulationRunner(
                 }
             }
 
-            loanAccounts = await accountService.GetAccounts(LedgerAccountType.Loan, BatchSize, loanAccounts.Last().Timestamp - 1);
+            loanAccounts = await accountService.GetAccounts(LedgerAccountType.Loan, BatchSize, loanAccounts.Last().Cursor - 1);
         }
     }
 }

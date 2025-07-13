@@ -4,7 +4,7 @@ using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
-public class AccountService(ILedgerRepository ledgerRepository)
+public class AccountService(LedgerRepository ledgerRepository)
 {
     private const uint BatchMax = 8189;
 
@@ -17,9 +17,9 @@ public class AccountService(ILedgerRepository ledgerRepository)
         return id;
     }
 
-    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, uint limit, ulong cursorMax)
     {
-        return await ledgerRepository.GetAccounts(code, null, limit, timestampMax);
+        return await ledgerRepository.GetAccounts(code, null, limit, cursorMax);
     }
 
     public async Task<LedgerAccount?> GetAccount(UInt128 accountId)
@@ -27,9 +27,9 @@ public class AccountService(ILedgerRepository ledgerRepository)
         return await ledgerRepository.GetAccount(accountId);
     }
 
-    public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 accountId, uint limit, ulong timestampMax, TransferSide? side)
+    public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 accountId, uint limit, ulong cursorMax, ulong? reference, TransferSide? side)
     {
-        return await ledgerRepository.GetAccountTransfers(accountId, limit, timestampMax, side);
+        return await ledgerRepository.GetAccountTransfers(accountId, limit, cursorMax, reference, side);
     }
 
     public async Task<IEnumerable<LedgerAccount>> GetAccountLoans(UInt128 accountId)

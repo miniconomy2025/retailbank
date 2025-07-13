@@ -12,5 +12,8 @@ public record Report(
     [property: Required]
     Int128 BankBalance,
     [property: Required]
-    UInt128 TotalMoney
-);    
+    UInt128 TotalMoney,
+    [property: Required]
+    [property: RegularExpression("^\\d+\\/\\d+\\/\\d+\\ \\d+:\\d+:\\d+$")]
+    string Timestamp
+);
