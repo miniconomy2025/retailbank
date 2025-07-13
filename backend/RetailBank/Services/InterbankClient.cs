@@ -8,11 +8,11 @@ namespace RetailBank.Services;
 
 public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOptions> options, ILogger<InterbankClient> logger)
 {
-    private async Task<decimal?> TryGetExternalAccountBalance(string getAccountUrl, string createAccountUrl)
+    private async Task<decimal?> TryGetExternalAccountBalance(string getAccountUrl, string createAccountUrl, string notifyUrl)
     {
         try
         {
-            var createAccountResponse = await httpClient.PostAsync(createAccountUrl, null);
+            var createAccountResponse = await httpClient.PostAsJsonAsync(createAccountUrl, new CreateCommercialAccountRequest(notifyUrl));
          
             if (createAccountResponse.StatusCode != HttpStatusCode.Conflict)
             {
@@ -85,7 +85,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
 
     private async Task<NotificationResult> TryExternalTransferInternal(InterbankTransferBankDetails details, UInt128 from, UInt128 to, UInt128 amount, ulong reference)
     {
-        var externalBalanceDecimal = await TryGetExternalAccountBalance(details.GetAccountUrl, details.CreateAccountUrl);
+        var externalBalanceDecimal = await TryGetExternalAccountBalance(details.GetAccountUrl, details.CreateAccountUrl, details.NotifyUrl);
         if (externalBalanceDecimal == null)
             return NotificationResult.Rejected;
 
