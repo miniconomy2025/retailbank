@@ -12,6 +12,7 @@ public static class Bootstrapper
         services.AddOptions<SimulationOptions>().BindConfiguration(SimulationOptions.Section);
         services.AddOptions<LoanOptions>().BindConfiguration(LoanOptions.Section);
         services.AddOptions<InterbankTransferOptions>().BindConfiguration(InterbankTransferOptions.Section);
+        services.AddOptions<TransferOptions>().BindConfiguration(TransferOptions.Section);
 
         services.AddHttpClient<InterbankClient>(client =>
         {
@@ -23,11 +24,11 @@ public static class Bootstrapper
             var handler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
-                ClientCertificateOptions = ClientCertificateOption.Manual
+                //ClientCertificateOptions = ClientCertificateOption.Manual
             };
-            handler.ClientCertificates.Add(new X509Certificate2(
-                options.Value.ClientCertificatePath
-            ));
+            //handler.ClientCertificates.Add(new X509Certificate2(
+            //    options.Value.ClientCertificatePath
+            //));
             return handler;
         });
 

@@ -1,4 +1,4 @@
-import { formatCurrency } from "@/utils/formatter";
+import { formatMoney } from "@/utils/formatter";
 import type { TransferPage } from "@/models/transfers";
 import { Link } from "react-router-dom";
 import { accountLink, accountName } from "@/models/accounts";
@@ -36,14 +36,14 @@ export default function TransfersCard({
               </td>
               <td
                 className={`px-2 py-2 font-mono ${
-                  item.debitAccountId != "1000"
-                    ? item.creditAccountId === "1000"
+                  (item.creditAccountId === "1002" || item.creditAccountId === "1005")
+                    ? "text-green-600"
+                    : (item.creditAccountId === "1004" || item.creditAccountId === "2000")
                       ? "text-red-600"
                       : "text-gray-600"
-                    : "text-green-600"
                 }`}
               >
-                {formatCurrency(item.amount).substring(2)}
+                {formatMoney(item.amount)}
               </td>
             </tr>
           ))}
