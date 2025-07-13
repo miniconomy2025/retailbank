@@ -171,7 +171,7 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 
 resource "aws_instance" "app_server" {
   ami  = data.aws_ami.ubuntu.id
-  instance_type = "t3.small"
+  instance_type = "t3.medium"
   subnet_id = aws_subnet.public.id
   iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
   tags = {
