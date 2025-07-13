@@ -12,21 +12,9 @@ public record AccountDto(
     [property: Required]
     LedgerAccountType AccountType,
     [property: Required]
-    [property: Range(0, ValidationConstants.UInt128Max)]
-    UInt128 DebitsPending,
+    BalanceDto Pending,
     [property: Required]
-    [property: Range(0, ValidationConstants.UInt128Max)]
-    UInt128 DebitsPosted,
-    [property: Required]
-    [property: Range(0, ValidationConstants.UInt128Max)]
-    UInt128 CreditsPending,
-    [property: Required]
-    [property: Range(0, ValidationConstants.UInt128Max)]
-    UInt128 CreditsPosted,
-    [property: Required]
-    Int128 BalancePending,
-    [property: Required]
-    Int128 BalancePosted,
+    BalanceDto Posted,
     [property: Required]
     bool Closed,
     [property: Required]
@@ -38,12 +26,8 @@ public record AccountDto(
         : this(
             account.Id.ToString(),
             account.AccountType,
-            account.DebitsPending,
-            account.DebitsPosted,
-            account.CreditsPending,
-            account.CreditsPosted,
-            account.BalancePending,
-            account.BalancePosted,
+            new BalanceDto(account.DebitsPending, account.CreditsPending, account.BalancePending),
+            new BalanceDto(account.DebitsPosted, account.CreditsPosted, account.BalancePosted),
             account.Closed,
             account.Timestamp
         )
