@@ -25,6 +25,10 @@ body {
   }
 }
 
+.transfer-card a:hover span:first-child {
+  text-decoration: underline;
+}
+
 a.transfer-id {
   text-decoration: underline;
 }

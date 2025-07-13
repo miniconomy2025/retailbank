@@ -92,9 +92,9 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         var externalBalanceCents = (UInt128)(100 * externalBalanceDecimal);
 
         // if external balance less than loan threshold then we issue a new loan
-        if (externalBalanceCents < options.Value.LoanAmountCents)
+        if (externalBalanceCents < options.Value.LoanAmountCents || externalBalanceCents < 2 * amount)
         {
-            await TryCreateExternalLoan(details.IssueLoanUrl, options.Value.LoanAmountCents);
+            await TryCreateExternalLoan(details.IssueLoanUrl, UInt128.Max(options.Value.LoanAmountCents, 2 * amount));
             // do nothing if we fail to get a loan, as we still may be able to make the transfer
         }
 
@@ -139,7 +139,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         {
             result = await TryExternalTransferInternal(bankDetails, from, to, amount, reference).ConfigureAwait(false);
 
-            if (result == NotificationResult.Succeeded)
+            if (result == NotificationResult.Succeeded || result == NotificationResult.AccountNotFound)
                 return result;
 
             await Task.Delay((int)options.Value.DelaySeconds * 1000);
