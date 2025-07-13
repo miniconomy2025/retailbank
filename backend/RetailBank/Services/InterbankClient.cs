@@ -94,9 +94,8 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         // if external balance less than loan threshold then we issue a new loan
         if (externalBalanceCents < options.Value.LoanAmountCents)
         {
-            var loanSuccess = await TryCreateExternalLoan(details.IssueLoanUrl, options.Value.LoanAmountCents);
-            if (!loanSuccess)
-                return NotificationResult.Rejected;
+            await TryCreateExternalLoan(details.IssueLoanUrl, options.Value.LoanAmountCents);
+            // do nothing if we fail to get a loan, as we still may be able to make the transfer
         }
 
         var transfer = new CreateCommercialTransferRequest(
