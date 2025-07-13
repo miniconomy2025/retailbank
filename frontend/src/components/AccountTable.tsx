@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Badge } from "./ui/badge";
-import { accountName, type Account } from "@/models/accounts";
+import { accountLink, accountName, type Account } from "@/models/accounts";
 import { formatMoney } from "@/utils/formatter";
 
 export function AccountTable({ accounts, summary = false }: { accounts: Account[], summary?: boolean }) {
@@ -30,8 +30,10 @@ export function AccountTable({ accounts, summary = false }: { accounts: Account[
                     return (
                         <TableRow key={account.id}>
                             <TableCell className="text-left">
-                                <Link className="font-mono" to={`/accounts/${account.id}`}>{account.id}</Link>
-                                <small className="ml-2">{accountName(account.id)}</small>
+                                <Link to={accountLink(account.id)}>
+                                    <span className="font-mono">{account.id}</span>
+                                    <small className="ml-2 text-gray-500">{accountName(account.id)}</small>
+                                </Link>
                             </TableCell>
                             <TableCell className="text-left">
                                 <Badge variant="outline">{account.accountType}</Badge>

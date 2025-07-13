@@ -59,22 +59,24 @@ export default function TransferTable({ transfers, accountId }: { transfers: Tra
                                     transfer.debitAccountId === accountId
                                     ? <>
                                         <TableCell className="text-left">
-                                            <Link className="font-mono" to={accountLink(transfer.creditAccountId, transfer.transferId)}>{transfer.creditAccountId}</Link>
-                                            <small className="ml-2">{accountName(transfer.creditAccountId)}</small>
+                                            <Link to={accountLink(transfer.creditAccountId, transfer.transferId)}>
+                                                <span className="font-mono">{transfer.creditAccountId}</span>
+                                                <small className="ml-2 text-gray-500">{accountName(transfer.creditAccountId)}</small>
+                                            </Link>
                                         </TableCell>
                                         <TableCell className="text-left transfer-amount font-mono">
                                             <span>{formatMoney(transfer.amount)}</span>
                                         </TableCell>
-                                        <TableCell className="text-left transfer-amount font-mono">
-                                        </TableCell>
+                                        <TableCell/>
                                     </>
                                     : <>
                                         <TableCell className="text-left">
-                                            <Link className="font-mono" to={accountLink(transfer.debitAccountId, transfer.transferId)}>{transfer.debitAccountId}</Link>
-                                            <small className="ml-2">{accountName(transfer.debitAccountId)}</small>
+                                            <Link to={accountLink(transfer.debitAccountId, transfer.transferId)}>
+                                                <span className="font-mono">{transfer.debitAccountId}</span>
+                                                <small className="ml-2 text-gray-500">{accountName(transfer.debitAccountId)}</small>
+                                            </Link>
                                         </TableCell>
-                                        <TableCell className="text-left transfer-amount font-mono">
-                                        </TableCell>
+                                        <TableCell/>
                                         <TableCell className="text-left transfer-amount font-mono">
                                             <span>{formatMoney(transfer.amount)}</span>
                                         </TableCell>
@@ -82,13 +84,17 @@ export default function TransferTable({ transfers, accountId }: { transfers: Tra
                                 }
                             </>
                             : <>
-                                <TableCell className="text-left font-mono">
-                                    <Link className="font-mono" to={accountLink(transfer.debitAccountId, transfer.transferId)}>{transfer.debitAccountId}</Link>
-                                    <small className="ml-2">{accountName(transfer.debitAccountId)}</small>
+                                <TableCell className="text-left">
+                                    <Link to={accountLink(transfer.debitAccountId, transfer.transferId)}>
+                                        <span className="font-mono">{transfer.debitAccountId}</span>
+                                        <small className="ml-2 text-gray-500">{accountName(transfer.debitAccountId)}</small>
+                                    </Link>
                                 </TableCell>
-                                <TableCell className="text-left font-mono">
-                                    <Link className="font-mono" to={accountLink(transfer.creditAccountId, transfer.transferId)}>{transfer.creditAccountId}</Link>
-                                    <small className="ml-2">{accountName(transfer.creditAccountId)}</small>
+                                <TableCell className="text-left">
+                                    <Link to={accountLink(transfer.creditAccountId, transfer.transferId)}>
+                                        <span className="font-mono">{transfer.creditAccountId}</span>
+                                        <small className="ml-2 text-gray-500">{accountName(transfer.creditAccountId)}</small>
+                                    </Link>
                                 </TableCell>
                                 <TableCell className="text-right transfer-amount font-mono">
                                     {formatMoney(transfer.amount)}
