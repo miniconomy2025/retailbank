@@ -2,16 +2,13 @@ using RetailBank.Services;
 using CliWrap;
 using CliWrap.Buffered;
 using RetailBank.Repositories;
-using TigerBeetle;
-using RetailBank.Exceptions;
-using RetailBank.Models.Ledger;
 using RetailBank.Models.Dtos;
+using FluentValidation;
 
 namespace RetailBank.Endpoints;
 
 public static class SimulationEndpoints
 {
-    private static readonly ulong InitialBankAccountBalance = 1_000_000_000ul;
     public static IEndpointRouteBuilder AddSimulationEndpoints(this IEndpointRouteBuilder routes)
     {
         routes
@@ -29,14 +26,17 @@ public static class SimulationEndpoints
 
     public static async Task<IResult> StartSimulation(
         SimulationControllerService simulationController,
-        ILedgerRepository ledgerRepository,
+        LedgerRepository ledgerRepository,
         StartSimulationRequest request,
-        InterbankClient interbankClient
+        InterbankClient interbankClient,
+        IValidator<StartSimulationRequest> validator
     )
     {
+        validator.ValidateAndThrow(request);
+
         await ledgerRepository.InitialiseInternalAccounts();
 
-        simulationController.Start(request.EpochStartTime * 1_000_000_000);
+        simulationController.Start(request.EpochStartTime * 1000);
 
         return Results.NoContent();
     }

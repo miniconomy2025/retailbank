@@ -27,7 +27,7 @@ builder.Services.Configure<JsonOptions>(options =>
 
 builder.Services
     .AddMemoryCache()
-    .AddSingleton<ILedgerRepository, TigerBeetleRepository>()
+    .AddSingleton<LedgerRepository>()
     .AddHostedService<SimulationRunner>()
     .AddServices()
     .AddValidators()

@@ -9,7 +9,7 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class LoanService(ILedgerRepository ledgerRepository, IOptions<LoanOptions> options)
+public class LoanService(LedgerRepository ledgerRepository, IOptions<LoanOptions> options)
 {
     public async Task<UInt128> CreateLoanAccount(UInt128 debitAccountNumber, ulong loanAmount)
     {

@@ -1,11 +1,9 @@
 ﻿using System.Globalization;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using RetailBank.Exceptions;
 using RetailBank.Extensions;
 using RetailBank.Models.Dtos;
-using RetailBank.Models.Options;
 using RetailBank.Services;
 using TigerBeetle;
 
@@ -113,20 +111,20 @@ public static class TransferEndpoints
         HttpContext httpContext,
         TransferService transferService,
         [FromQuery] uint limit = 25,
-        [FromQuery] ulong timestampMax = 0
+        [FromQuery] ulong cursorMax = 0,
+        [FromQuery] ulong? reference = null
     )
     {
-        var transfers = (await transferService.GetTransfers(limit, timestampMax))
-            .Select(transfer => new TransferDto(transfer));
+        var transfers = await transferService.GetTransfers(limit, cursorMax, reference);
 
         string? nextUri = null;
         if (transfers.Count() > 0 && httpContext.Request.Path.HasValue)
         {
-            var newMax = transfers.Last().Timestamp - 1;
-            nextUri = $"{httpContext.Request.Path}?limit={limit}&timestampMax={newMax}";
+            var newMax = transfers.Last().Cursor - 1;
+            nextUri = $"{httpContext.Request.Path}?limit={limit}&cursorMax={newMax}";
         }
 
-        var pagination = new CursorPagination<TransferDto>(transfers, nextUri);
+        var pagination = new CursorPagination<TransferDto>(transfers.Select(transfer => new TransferDto(transfer)), nextUri);
 
         return Results.Ok(pagination);
     }

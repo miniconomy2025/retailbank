@@ -4,7 +4,6 @@ export interface Transfer {
   creditAccountId: string;
   amount: number;
   parentId?: string;
-  timestamp: number;
   transferType: TransferType;
   reference: number;
 }

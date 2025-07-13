@@ -16,10 +16,7 @@ public record AccountDto(
     [property: Required]
     BalanceDto Posted,
     [property: Required]
-    bool Closed,
-    [property: Required]
-    [property: Range(0, ulong.MaxValue)]
-    ulong CreatedAt
+    bool Closed
 )
 {
     public AccountDto(LedgerAccount account)
@@ -28,8 +25,7 @@ public record AccountDto(
             account.AccountType,
             new BalanceDto(account.DebitsPending, account.CreditsPending, account.BalancePending),
             new BalanceDto(account.DebitsPosted, account.CreditsPosted, account.BalancePosted),
-            account.Closed,
-            account.Timestamp
+            account.Closed
         )
     { }
 }

@@ -1,23 +1,28 @@
 using Microsoft.Extensions.Options;
 using RetailBank.Models.Options;
-using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
 public class SimulationControllerService(IOptions<SimulationOptions> options)
 {
     public bool IsRunning { get; private set; } = false;
-    public ulong StartTime { get; private set; } = 0;
+    public ulong UnixStartTime { get; private set; }
     public uint TimeScale => options.Value.TimeScale;
 
     public void Start(ulong startTime)
     {
         IsRunning = true;
-        StartTime = startTime;
+        UnixStartTime = startTime;
     }
 
     public void Stop()
     {
         IsRunning = false;
+    }
+
+    public ulong TimestampToSim(ulong timestamp)
+    {
+        var sim = (timestamp - UnixStartTime) * TimeScale + options.Value.SimulationStart;
+        return sim;
     }
 }

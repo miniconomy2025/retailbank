@@ -27,9 +27,6 @@ public record TransferDto(
     [property: RegularExpression(ValidationConstants.Hex)]
     string? ParentId,
     [property: Required]
-    [property: Range(0, ulong.MaxValue)]
-    ulong Timestamp,
-    [property: Required]
     [property: Range(1, ulong.MaxValue)]
     ulong Reference
 )
@@ -42,7 +39,6 @@ public record TransferDto(
             transfer.CreditAccountId.ToString(),
             transfer.Amount,
             transfer.ParentId.HasValue ? transfer.ParentId.Value.ToHex() : null,
-            transfer.Timestamp,
             transfer.Reference
         )
     { }

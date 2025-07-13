@@ -5,7 +5,7 @@ using TigerBeetle;
 
 namespace RetailBank.Repositories;
 
-public class TigerBeetleRepository(TigerBeetleClientProvider tbClientProvider, SimulationControllerService simulationControllerService) : ILedgerRepository
+public class LedgerRepository(TigerBeetleClientProvider tbClientProvider)
 {
     public const uint LedgerId = 1;
     public const ushort TransferCode = 1;
@@ -18,11 +18,11 @@ public class TigerBeetleRepository(TigerBeetleClientProvider tbClientProvider, S
             throw new TigerBeetleResultException<CreateAccountResult>(result);
     }
 
-    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, UInt128? debitAccountId, uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, UInt128? debitAccountId, uint limit, ulong cursorMax)
     {
         var filter = new QueryFilter();
         filter.Limit = limit;
-        filter.TimestampMax = timestampMax;
+        filter.TimestampMax = cursorMax;
         filter.Flags = QueryFilterFlags.Reversed;
 
         if (code.HasValue)
@@ -32,7 +32,7 @@ public class TigerBeetleRepository(TigerBeetleClientProvider tbClientProvider, S
             filter.UserData128 = debitAccountId.Value;
 
         var accounts = (await tbClientProvider.Client.QueryAccountsAsync(filter))
-            .Select(account => new LedgerAccount(account, simulationControllerService.StartTime, simulationControllerService.TimeScale));
+            .Select(account => new LedgerAccount(account));
         return accounts;
     }
 
@@ -43,32 +43,34 @@ public class TigerBeetleRepository(TigerBeetleClientProvider tbClientProvider, S
         if (!account.HasValue)
             return null;
         
-        return new LedgerAccount(account.Value, simulationControllerService.StartTime, simulationControllerService.TimeScale);
+        return new LedgerAccount(account.Value);
     }
 
-    public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 id, uint limit, ulong timestampMax, TransferSide? side)
+    public async Task<IEnumerable<LedgerTransfer>> GetAccountTransfers(UInt128 id, uint limit, ulong cursorMax, ulong? reference, TransferSide? side)
     {
         var filter = new AccountFilter();
         filter.AccountId = id;
         filter.Limit = limit;
-        filter.TimestampMax = timestampMax;
+        filter.TimestampMax = cursorMax;
+        filter.UserData64 = reference ?? 0;
         filter.Flags = (side?.ToAccountFilterFlags() ?? (AccountFilterFlags.Debits | AccountFilterFlags.Credits)) | AccountFilterFlags.Reversed;
 
         var transfers = (await tbClientProvider.Client.GetAccountTransfersAsync(filter))
-            .Select(transfer => new LedgerTransfer(transfer, simulationControllerService.StartTime, simulationControllerService.TimeScale));
+            .Select(transfer => new LedgerTransfer(transfer));
         
         return transfers;
     }
 
-    public async Task<IEnumerable<LedgerTransfer>> GetTransfers(uint limit, ulong timestampMax)
+    public async Task<IEnumerable<LedgerTransfer>> GetTransfers(uint limit, ulong cursorMax, ulong? reference)
     {
         var filter = new QueryFilter();
         filter.Limit = limit;
-        filter.TimestampMax = timestampMax;
+        filter.TimestampMax = cursorMax;
+        filter.UserData64 = reference ?? 0;
         filter.Flags = QueryFilterFlags.Reversed;
 
         var transfers = (await tbClientProvider.Client.QueryTransfersAsync(filter))
-            .Select(transfer => new LedgerTransfer(transfer, simulationControllerService.StartTime, simulationControllerService.TimeScale));
+            .Select(transfer => new LedgerTransfer(transfer));
         return transfers;
     }
 
@@ -79,7 +81,7 @@ public class TigerBeetleRepository(TigerBeetleClientProvider tbClientProvider, S
         if (!transfer.HasValue)
             return null;
 
-        return new LedgerTransfer(transfer.Value, simulationControllerService.StartTime, simulationControllerService.TimeScale);
+        return new LedgerTransfer(transfer.Value);
     }
 
     public async Task<UInt128> Transfer(LedgerTransfer ledgerTransfer)

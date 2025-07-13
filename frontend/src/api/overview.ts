@@ -11,7 +11,6 @@ export async function getReport(): Promise<ReportData> {
   }
   const data = await response.json();
   return {
-    ...data,
-    timestamp: new Date().toLocaleTimeString(),
+    ...data
   };
 }
