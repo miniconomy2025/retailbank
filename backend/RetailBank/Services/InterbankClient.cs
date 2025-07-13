@@ -139,7 +139,7 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         {
             result = await TryExternalTransferInternal(bankDetails, from, to, amount, reference).ConfigureAwait(false);
 
-            if (result == NotificationResult.Succeeded)
+            if (result == NotificationResult.Succeeded || result == NotificationResult.AccountNotFound)
                 return result;
 
             await Task.Delay((int)options.Value.DelaySeconds * 1000);
