@@ -10,7 +10,7 @@ public static class LoanEndpoints
     {
         routes
             .MapPost("/loans", CreateLoanAccount)
-            .Produces<CreateAccountResponse>(StatusCodes.Status200OK)
+            .Produces<CreateLoanAccountResponse>(StatusCodes.Status200OK)
             .WithSummary("Issue a Loan to a Transactional Account")
             .WithDescription(
                 """
@@ -37,6 +37,6 @@ public static class LoanEndpoints
         var debtorAccountId = UInt128.Parse(request.DebtorAccountId);
         var accountId = await loanService.CreateLoanAccount(debtorAccountId, request.LoanAmountCents);
 
-        return Results.Ok(new CreateAccountResponse(accountId.ToString()));
+        return Results.Ok(new CreateLoanAccountResponse(accountId.ToString()));
     }
 }

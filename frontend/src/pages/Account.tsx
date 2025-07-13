@@ -1,26 +1,17 @@
-import { ArrowDownIcon, ArrowUpIcon, ExternalLink } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { type Account } from "@/models/accounts";
+import { AccountNames, type Account } from "@/models/accounts";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getAccount, getAccountLoans, getAccountTransfers } from "@/api/accounts";
 import PageWrapper from "@/components/PageWrapper";
 import { formatCurrency } from "@/utils/formatter";
-import { useNavigate, useParams } from "react-router-dom";
-import type { Transfer, TransferPage } from "@/models/transfers";
+import { useParams } from "react-router-dom";
+import type { TransferPage } from "@/models/transfers";
 import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import TransferTable from "@/components/TransferTable";
+import { AccountTable } from "@/components/AccountTable";
+import { BanknoteArrowDown, BanknoteArrowUp, BanknoteIcon } from "lucide-react";
 
 export default function Account() {
-  const navigate = useNavigate();
   const { accountId: accountIdString } = useParams();
   const accountId = accountIdString ?? "0";
 
@@ -80,9 +71,6 @@ export default function Account() {
 
   const transfers = data?.pages.flatMap((page) => page.items) ?? [];
 
-  const isDebit = (transfer: Transfer) =>
-    transfer.debitAccountId === accountId;
-
   return (
     <PageWrapper
       loading={isAccountLoading || isTransfersLoading || isLoanAccountsLoading}
@@ -90,161 +78,112 @@ export default function Account() {
     >
       <div className="h-full flex flex-col gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-left">Accounts Transfers</h1>
-          <p className="text-left">Account {accountId}</p>
+          <h1 className="text-3xl font-bold text-left">{account?.accountType} Account</h1>
+          {
+            accountId in AccountNames
+            ? <p className="text-left">
+              {AccountNames[accountId as keyof typeof AccountNames]}
+              <span className="ml-2 font-mono">{accountId}</span>
+            </p>
+            : <p className="text-left font-mono">{accountId}</p>
+          }
         </div>
-        <AccountCardRow account={account} />
 
-        {/* Loans Section (shown only for non-loan accounts) */}
-        { account && account.accountType !== 'Loan' ? (
-          <section className="rounded-md border overflow-auto">
-            {loanAccounts?.length ? <h2 className="text-2xl font-bold px-4 py-2 justify-self-start">Loans</h2> : null}
-            <Accordion type="multiple">
-              {loanAccounts?.length && loanAccounts.length > 0 ? (<>{
-                loanAccounts.map((loanAccount) => (
-                  <AccordionItem key={loanAccount.id} value={loanAccount.id}>
-                    <AccordionTrigger className="px-4">
-                      Account {loanAccount.id} {loanAccount.closed ? "(Closed)" : "(Open)"}
-                    </AccordionTrigger>
-                    <AccordionContent className="p-4">
-                      <span 
-                        className="flex items-center gap-2 mb-2 cursor-pointer hover:underline w-fit"
-                        onClick={() => navigate(`/accounts/${loanAccount.id}`)}
-                      >
-                        <ExternalLink
-                          className="h-4 w-4"
-                        />
-                        <span className="text-sm">
-                          View Account
-                        </span>
-                      </span>
-                      <AccountCardRow account={loanAccount} />
-                    </AccordionContent>
-                  </AccordionItem>
-                ))
-              }</>) : (
-                <div className="text-center py-8">
-                  No loans found for this account
-                </div>
-              )}
-            </Accordion>
-          </section>
-        ) : null }
-
+        <div className="flex gap-4 flex-col lg:flex-row align-center">
+          <div>
+            <h2 className="text-left text-xl font-thin px-2 py-2">Account Summary</h2>
+            {
+              account
+              ? <AccountCardRow account={account}/>
+              : <div className="text-center py-8">Account not found</div>
+            }
+          </div>
+          {/* Loans Section */}
+          { account && account.accountType === 'Transactional' && loanAccounts ? (
+            <div className="h-full flex-1">
+              <div className="rounded-md border overflow-auto min-w-80 h-44 lg:h-80 xl:h-44">
+                <h2 className="text-left text-xl font-thin px-4 py-2">Loans</h2>
+                <hr />
+                {
+                  loanAccounts.length > 0
+                  ? <AccountTable accounts={loanAccounts} summary={true}/>
+                  : <div className="text-center py-8 ">
+                    No loans found for this account
+                  </div>
+                }
+              </div>
+            </div>
+          ) : null }
+        </div>
 
         {/* Transfers Section */}
-        <div className="rounded-md border overflow-auto">
-          {transfers?.length ? <h2 className="text-2xl font-bold px-4 py-2 justify-self-start">Transfers</h2> : null}
-          {transfers?.length === 0 ? (
-            <div className="text-center py-8 ">
-              No transfers found for this account
+        {
+          transfers &&
+          <>
+            <div className="rounded-md border overflow-auto min-h-44">
+              <h2 className="text-left text-xl font-thin px-4 py-2 justify-self-start">Transfers</h2>
+              <hr />
+              {transfers?.length === 0 ? (
+                <div className="text-center py-8 ">
+                  No transfers found for this account
+                </div>
+              ) : (
+                <>
+                  <TransferTable transfers={transfers} accountId={account?.id}/>
+                  <div ref={bottomRef} className="h-px" />
+                </>
+              )}
             </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>To</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transfers?.map((transfer) => (
-                    <TableRow key={transfer.transferId + transfer.timestamp}>
-                      <TableCell className="text-left">
-                        {transfer.transferId}
-                      </TableCell>
-                      <TableCell className="text-left">
-                        <div className="flex items-center gap-1">
-                          {isDebit(transfer) ? (
-                            <>
-                              <ArrowDownIcon className="h-4 w-4 text-red-500" />
-                              <span className="text-red-600">Debit</span>
-                            </>
-                          ) : (
-                            <>
-                              <ArrowUpIcon className="h-4 w-4 text-green-500" />
-                              <span className="text-green-600">Credit</span>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-left">
-                        {transfer.debitAccountId}
-                      </TableCell>
-                      <TableCell className="text-left">
-                        {transfer.creditAccountId}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(transfer.amount)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge>{transfer.transferType}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div ref={bottomRef} className="h-px" />
-            </>
-          )}
-        </div>
+          </>
+        }
       </div>
     </PageWrapper>
   );
 }
 
-const AccountCardRow = ({ account }: { account: Account | undefined }) => (
-  <>
-    { account ? (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex">
-            <CardTitle className="font-medium">Posted balance</CardTitle>
-          </CardHeader>
+const AccountCardRow = ({ account }: { account: Account }) => (
+  <div className={`grid content-center gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full ${account.accountType !== 'Transactional' ? "lg:grid-cols-3" : "lg:grid-cols-2 xl:grid-cols-3"}`}>
+    <Card>
+      <CardHeader className="flex">
+        <BanknoteArrowUp className="w-6 h-6"/>
+        <CardTitle className="text-left text-xl font-light flex-1 leading-6">Debit</CardTitle>
+      </CardHeader>
       <CardContent>
-        <div className="text-xl font-bold">
-          {formatCurrency(account?.balancePosted ?? 0)}
+        <div className="flex justify-center text-lg">
+          <div className="text-left">
+            <small>Posted:</small> <span className="ml-2 font-mono">{formatCurrency(account.posted.debits)}</span>
+            <br/>
+            <small>Pending:</small> <span className="ml-2 font-mono">{formatCurrency(account.pending.debits)}</span>          </div>
         </div>
       </CardContent>
     </Card>
     <Card>
       <CardHeader className="flex">
-        <CardTitle className="font-medium">Pending Balance</CardTitle>
+        <BanknoteArrowDown className="w-6 h-6"/>
+        <CardTitle className="text-left text-xl font-light flex-1 leading-6">Credit</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-xl font-bold">
-          {formatCurrency(account?.balancePending ?? 0)}
+        <div className="flex justify-center text-lg">
+          <div className="text-left">
+            <small>Posted:</small> <span className="ml-2 font-mono">{formatCurrency(account.posted.credits)}</span>
+            <br/>
+            <small>Pending:</small> <span className="ml-2 font-mono">{formatCurrency(account.pending.credits)}</span>          </div>
         </div>
       </CardContent>
     </Card>
     <Card>
       <CardHeader className="flex">
-        <CardTitle className="font-medium">Total Debit</CardTitle>
+        <BanknoteIcon className="w-6 h-6"/>
+        <CardTitle className="text-left text-xl font-light flex-1 leading-6">Balance</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-xl font-bold">
-          {formatCurrency(account?.debitsPosted ?? 0)}
+        <div className="flex justify-center text-lg">
+          <div className="text-left">
+            <small>Posted:</small> <span className="ml-2 font-mono">{formatCurrency(account.posted.balance)}</span>
+            <br/>
+            <small>Pending:</small> <span className="ml-2 font-mono">{formatCurrency(account.pending.balance)}</span>          </div>
         </div>
       </CardContent>
     </Card>
-    <Card>
-      <CardHeader className="flex">
-        <CardTitle className="font-medium">Total Credit</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-xl font-bold">
-          {formatCurrency(account?.creditsPending ?? 0)}
-        </div>
-      </CardContent>
-    </Card>
-  </div> 
-    ) : (
-      <div className="text-center py-8">Account not found</div>
-    )}
-  </>
+  </div>
 );

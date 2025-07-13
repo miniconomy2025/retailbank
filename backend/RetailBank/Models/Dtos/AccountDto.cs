@@ -1,17 +1,24 @@
-﻿using RetailBank.Models.Ledger;
+﻿using System.ComponentModel.DataAnnotations;
+using RetailBank.Models.Ledger;
+using RetailBank.Validation;
 
 namespace RetailBank.Models.Dtos;
 
 public record AccountDto(
+    [property: Required]
+    [property: Length(4, 13)]
+    [property: RegularExpression(ValidationConstants.AccountNumber)]
     string Id,
+    [property: Required]
     LedgerAccountType AccountType,
-    UInt128 DebitsPending,
-    UInt128 DebitsPosted,
-    UInt128 CreditsPending,
-    UInt128 CreditsPosted,
-    Int128 BalancePending,
-    Int128 BalancePosted,
+    [property: Required]
+    BalanceDto Pending,
+    [property: Required]
+    BalanceDto Posted,
+    [property: Required]
     bool Closed,
+    [property: Required]
+    [property: Range(0, ulong.MaxValue)]
     ulong CreatedAt
 )
 {
@@ -19,12 +26,8 @@ public record AccountDto(
         : this(
             account.Id.ToString(),
             account.AccountType,
-            account.DebitsPending,
-            account.DebitsPosted,
-            account.CreditsPending,
-            account.CreditsPosted,
-            account.BalancePending,
-            account.BalancePosted,
+            new BalanceDto(account.DebitsPending, account.CreditsPending, account.BalancePending),
+            new BalanceDto(account.DebitsPosted, account.CreditsPosted, account.BalancePosted),
             account.Closed,
             account.Timestamp
         )

@@ -1,3 +1,9 @@
-﻿namespace RetailBank.Models.Dtos;
+﻿using System.ComponentModel.DataAnnotations;
 
-public record StartSimulationRequest(ulong EpochStartTime);
+namespace RetailBank.Models.Dtos;
+
+public record StartSimulationRequest(
+    [property: Required]
+    [property: Range(0, ulong.MaxValue)]
+    ulong EpochStartTime
+);

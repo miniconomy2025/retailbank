@@ -8,10 +8,12 @@ public class CreateTransferRequestValidator : AbstractValidator<CreateTransferRe
     public CreateTransferRequestValidator()
     {
         RuleFor(req => req.From)
-            .Matches(ValidationConstants.TransferFromAccountNumber)
+            .Length(12)
+            .Matches(ValidationConstants.Base10)
             .WithMessage("'From' account number is not a valid account number.");
         RuleFor(req => req.To)
-            .Matches(ValidationConstants.TransferToAccountNumber)
+            .Length(12, 13)
+            .Matches(ValidationConstants.Base10)
             .WithMessage("'To' account number is not a valid account number.");
         RuleFor(req => req.AmountCents)
             .NotEmpty()

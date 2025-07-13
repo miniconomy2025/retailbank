@@ -10,6 +10,7 @@ import { type TransferPage } from "@/models/transfers";
 import { getTransfers } from "@/api/transfers";
 import Charts from "@/components/Charts";
 import TransfersCard from "@/components/TransfersCard";
+import { cn } from "@/lib/utils";
 
 export default function Overview() {
   const { data: retailAcc, isLoading: retailLoading } = useQuery<Account>({
@@ -106,7 +107,7 @@ export default function Overview() {
 function AccountCard({ title, account }: { title: string; account: Account }) {
   const navigate = useNavigate();
   const displayBalance =
-    account.id == "1002" ? account.balancePosted * -1 : account.balancePosted;
+    account.id == "1002" ? account.posted.balance * -1 : account.posted.balance;
 
   return (
     <Card
@@ -116,16 +117,18 @@ function AccountCard({ title, account }: { title: string; account: Account }) {
       <CardHeader className="flex">
         <div className="flex gap-2">
           <BanknoteArrowUp className="w-6 h-6"/>
-          <CardTitle className="text-xl font-light flex-1">{title}</CardTitle>
+          <CardTitle className="text-xl font-light flex-1 leading-6">{title}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
         <div
-          className={
-            displayBalance <= 0
-              ? "flex justify-start font-extrabold text-lg text-bol text-red-500"
-              : "flex justify-start font-extrabold text-lg text-bol text-green-500"
-          }
+          className={cn("flex justify-start text-lg font-mono", 
+            displayBalance > 0
+            ? "text-green-600"
+            : displayBalance < 0
+            ? "text-red-600"
+            : "text-gray-600"
+          )}
         >
           {formatCurrency(displayBalance)}
         </div>
