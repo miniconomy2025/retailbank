@@ -45,10 +45,10 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
                 getAccountResponse.EnsureSuccessStatusCode();
             }
 
-            var getAccountBody = await getAccountResponse.Content.ReadFromJsonAsync<GetCommercialAccountResponse>();
+            var getAccountBody = await getAccountResponse.Content.ReadFromJsonAsync<GetCommercialAccountBalanceResponse>();
             ArgumentNullException.ThrowIfNull(getAccountBody);
 
-            return getAccountBody.NetBalance;
+            return getAccountBody.Balance;
         }
         catch (Exception e)
         {
