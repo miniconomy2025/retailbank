@@ -23,3 +23,38 @@ export interface TransferPage {
   items: Transfer[];
   next?: string | null;
 }
+
+export const TransferTypeInfo = {
+  "Transfer": {
+    displayName: "Transfer",
+    className: "transfer-transfer",
+  },
+  "StartTransfer": {
+    displayName: "Start Transfer",
+    className: "transfer-start-transfer",
+  },
+  "CompleteTransfer": {
+    displayName: "Complete Transfer",
+    className: "transfer-complete-transfer",
+  },
+  "CancelTransfer": {
+    displayName: "Cancel Transfer",
+    className: "transfer-cancel-transfer",
+  },
+  "BalanceDebit": {
+    displayName: "Balance Debit",
+    className: "transfer-balance-debit",
+  },
+  "BalanceCredit": {
+    displayName: "Balance Credit",
+    className: "transfer-balance-credit",
+  },
+  "CloseDebit": {
+    displayName: "Close Debit",
+    className: "transfer-close-debit",
+  },
+  "CloseCredit": {
+    displayName: "Close Credit",
+    className: "transfer-close-credit",
+  },
+};

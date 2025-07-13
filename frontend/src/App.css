@@ -13,3 +13,66 @@ body {
   height: 100svh;
   overflow: hidden;
 }
+
+.transfer-table, .accounts-table {
+  a {
+    color: #048;
+    text-decoration: underline;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+}
+
+a.transfer-id {
+  text-decoration: underline;
+}
+
+.transfer-transfer .transfer-event-type {
+  color: white;
+}
+
+.transfer-start-transfer {
+  .transfer-event-type {
+    color: black;
+    background-color: #ddd;
+  }
+
+  .transfer-amount {
+    opacity: 35%;
+  }
+}
+
+.transfer-complete-transfer .transfer-event-type {
+  color: white;
+  background-color: oklab(36% -0.12 0.09);
+}
+
+.transfer-cancel-transfer {
+  .transfer-event-type {
+    color: white;
+    background-color: oklab(36% 0.13 0.07);
+  }
+
+  .transfer-amount {
+    text-decoration: line-through;
+  }
+}
+
+.transfer-balance-debit .transfer-event-type {
+  color: white;
+}
+
+.transfer-balance-credit .transfer-event-type {
+  color: white;
+}
+
+.transfer-close-debit .transfer-event-type {
+  color: white;
+}
+
+.transfer-close-credit .transfer-event-type {
+  color: white;
+}
+
