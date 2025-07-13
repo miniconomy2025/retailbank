@@ -92,9 +92,9 @@ public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOp
         var externalBalanceCents = (UInt128)(100 * externalBalanceDecimal);
 
         // if external balance less than loan threshold then we issue a new loan
-        if (externalBalanceCents < options.Value.LoanAmountCents)
+        if (externalBalanceCents < options.Value.LoanAmountCents || externalBalanceCents < 2 * amount)
         {
-            await TryCreateExternalLoan(details.IssueLoanUrl, options.Value.LoanAmountCents);
+            await TryCreateExternalLoan(details.IssueLoanUrl, UInt128.Max(options.Value.LoanAmountCents, 2 * amount));
             // do nothing if we fail to get a loan, as we still may be able to make the transfer
         }
 
