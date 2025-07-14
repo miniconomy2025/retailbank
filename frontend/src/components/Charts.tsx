@@ -18,7 +18,7 @@ export default function Charts() {
   const [loanAccountsDataPoints, setLoanAccountDataPoints] = useState<
     DataPoint[]
   >([]);
-  const [totalEconomicVolume, setTotalEconomic] = useState<DataPoint[]>([]);
+  const [recentVolumeVolume, setRecentVolume] = useState<DataPoint[]>([]);
 
   const { data: reportData } = useQuery<ReportData>({
     queryKey: ["report"],
@@ -37,9 +37,9 @@ export default function Charts() {
       ...prev.slice(-30),
       { time: reportData.timestamp, value: reportData.loanAccounts },
     ]);
-    setTotalEconomic((prev) => [
+    setRecentVolume((prev) => [
       ...prev.slice(-30),
-      { time: reportData.timestamp, value: reportData.totalMoney },
+      { time: reportData.timestamp, value: reportData.recentVolume },
     ]);
     setTransactionalAccountsDataPoints((prev) => [
       ...prev.slice(-30),
@@ -66,9 +66,9 @@ export default function Charts() {
       </div>
       <div className="h-60">
         <LiveChart
-          dataPoints={totalEconomicVolume}
-          title="Economic Volume"
-          label="Total Volume"
+          dataPoints={recentVolumeVolume}
+          title="Economic Activity"
+          label="Transfer volume in last 24 hrs"
           chartColor={pastelPurple}
         />
       </div>

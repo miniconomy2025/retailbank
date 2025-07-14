@@ -8,7 +8,7 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class TransferService(LedgerRepository ledgerRepository, InterbankClient interbankClient, IOptions<TransferOptions> options)
+public class TransferService(LedgerRepository ledgerRepository, InterbankClient interbankClient, IOptions<TransferOptions> options, IOptions<SimulationOptions> simOptions)
 {
     public async Task<LedgerTransfer?> GetTransfer(UInt128 id)
     {
@@ -76,6 +76,45 @@ public class TransferService(LedgerRepository ledgerRepository, InterbankClient 
                 0, TransferType.Transfer
             )
         ]);
+    }
+
+    public async Task<UInt128> GetRecentVolume()
+    {
+        const uint BatchSize = 4096;
+        // 1 day in-sim
+        ulong RecentTimePeriod = 24ul * 3600ul * 1000000000ul / simOptions.Value.TimeScale;
+
+        UInt128 volume = 0;
+
+        var transfers = await GetTransfers(BatchSize, 0, null);
+
+        var minCursor = 0ul;
+
+        if (transfers.Count() > 0)
+            minCursor = transfers.First().Cursor - RecentTimePeriod;
+
+        var finished = false;
+
+        while (transfers.Count() > 0)
+        {
+            foreach (var transfer in transfers)
+            {
+                if (transfer.Cursor < minCursor)
+                {
+                    finished = true;
+                    break;
+                }
+                if (transfer.TransferType == TransferType.Transfer || transfer.TransferType == TransferType.CompleteTransfer)
+                    volume += transfer.Amount;
+            }
+
+            if (finished)
+                break;
+
+            transfers = await GetTransfers(BatchSize, transfers.Last().Cursor - 1, null);
+        }
+
+        return volume;
     }
 
     private async Task<UInt128> ExternalCommercialTransfer(UInt128 payerAccountId, UInt128 externalAccountId, UInt128 amount, ulong reference)
