@@ -2,6 +2,6 @@ export interface ReportData {
   transactionalAccounts: number;
   loanAccounts: number;
   bankBalance: number;
-  totalMoney: number;
+  recentVolume: number;
   timestamp: string;
 }

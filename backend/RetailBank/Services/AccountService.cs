@@ -37,21 +37,6 @@ public class AccountService(LedgerRepository ledgerRepository)
         return await ledgerRepository.GetAccounts(LedgerAccountType.Loan, accountId, BatchMax, 0);
     }
 
-    public async Task<UInt128> GetTotalVolume()
-    {
-        UInt128 volume = 0;
-        foreach (var variant in Enum.GetValues<LedgerAccountId>())
-        {
-            volume += (await GetAccount((ulong)variant))?.DebitsPosted ?? 0;
-        }
-        foreach (var variant in Enum.GetValues<Bank>())
-        {
-            volume += (await GetAccount((ulong)variant))?.DebitsPosted ?? 0;
-        }
-
-        return volume;
-    }
-
     // 12 digits starting with "1000"
     private static ulong GenerateTransactionalAccountNumber()
     {
