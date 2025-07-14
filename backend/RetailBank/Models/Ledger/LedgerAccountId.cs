@@ -6,7 +6,6 @@
 public enum LedgerAccountId
 {
     InterestIncome = 1002,
-    LoanControl = 1003,
     BadDebts = 1004,
     FeeIncome = 1005,
 }

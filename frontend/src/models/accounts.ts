@@ -22,7 +22,6 @@ export type LedgerAccountType = "Internal" | "Transactional" | "Loan";
 
 export const AccountNames = {
   "1002": "Interest Income",
-  "1003": "Loan Control",
   "1004": "Bad Debts",
   "1005": "Fee Income",
   "1000": "Retail Bank",
