@@ -12,6 +12,7 @@ public static class Bootstrapper
         services.AddOptions<SimulationOptions>().BindConfiguration(SimulationOptions.Section);
         services.AddOptions<LoanOptions>().BindConfiguration(LoanOptions.Section);
         services.AddOptions<InterbankTransferOptions>().BindConfiguration(InterbankTransferOptions.Section);
+        services.AddOptions<TransferOptions>().BindConfiguration(TransferOptions.Section);
 
         services.AddHttpClient<InterbankClient>(client =>
         {

@@ -28,10 +28,10 @@ export default function Overview() {
       refetchInterval: 10000,
     });
 
-  const { data: loanControlAcc, isLoading: loanControlLoading } =
+  const { data: feeIncomeAcc, isLoading: feeIncomeLoading } =
     useQuery<Account>({
-      queryKey: [`account-${1003}`],
-      queryFn: () => getAccount("1003"),
+      queryKey: [`account-${1005}`],
+      queryFn: () => getAccount("1005"),
       retry: false,
       refetchInterval: 10000,
     });
@@ -50,7 +50,14 @@ export default function Overview() {
     error: transferPageError,
   } = useQuery<TransferPage>({
     queryKey: ["OverviewTransfers"],
-    queryFn: () => getTransfers(undefined, 30),
+    queryFn: async () => {
+      var transfers = await getTransfers(undefined, 30);
+      transfers.items = transfers.items.filter(transfer =>
+        transfer.transferType === 'CompleteTransfer' ||
+        transfer.transferType === 'Transfer'
+      )
+      return transfers;
+    },
     refetchInterval: 5000,
   });
 
@@ -59,7 +66,7 @@ export default function Overview() {
       loading={
         ((retailLoading && retailAcc) ||
           (interestIncomeLoading && interestIncomeAcc) ||
-          (loanControlLoading && loanControlAcc) ||
+          (feeIncomeLoading && feeIncomeAcc) ||
           (commercialBankLoading && commercialBankAcc) ||
           (transferPageLoading && transferPage)) ??
         false
@@ -79,8 +86,8 @@ export default function Overview() {
                   account={commercialBankAcc}
                 />
               )}
-              {loanControlAcc && (
-                <AccountCard title="Loan Control" account={loanControlAcc} />
+              {feeIncomeAcc && (
+                <AccountCard title="Fee Income" account={feeIncomeAcc} />
               )}
               {interestIncomeAcc && (
                 <AccountCard
@@ -106,8 +113,10 @@ export default function Overview() {
 
 function AccountCard({ title, account }: { title: string; account: Account }) {
   const navigate = useNavigate();
-  const displayBalance =
-    account.id == "1002" ? account.posted.balance * -1 : account.posted.balance;
+  const displayBalance = account.posted.balance + account.pending.balance
+  const balanceCompare = displayBalance * (
+    account.id == "1002" || account.id == "1005" ? -1 : 1
+  );
 
   return (
     <Card
@@ -123,11 +132,11 @@ function AccountCard({ title, account }: { title: string; account: Account }) {
       <CardContent>
         <div
           className={cn("flex justify-start text-lg font-mono", 
-            displayBalance > 0
+            balanceCompare > 0
             ? "text-green-600"
-            : displayBalance < 0
+            : (balanceCompare < 0
             ? "text-red-600"
-            : "text-gray-600"
+            : "text-gray-600")
           )}
         >
           {formatCurrency(displayBalance)}

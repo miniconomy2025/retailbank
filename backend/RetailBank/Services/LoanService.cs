@@ -71,7 +71,7 @@ public class LoanService(LedgerRepository ledgerRepository, IOptions<LoanOptions
         await ledgerRepository.TransferLinked([
             new LedgerTransfer(ID.Create(), (ulong)Bank.Retail, (ulong)LedgerAccountId.LoanControl, (UInt128)(amountDue - interestDue), 0, TransferType.Transfer),
             new LedgerTransfer(ID.Create(), loanDebitAccountId, loanAccount.Id, (UInt128)(amountDue - interestDue), 0, TransferType.Transfer),
-            new LedgerTransfer(ID.Create(), (ulong)Bank.Retail, (ulong)LedgerAccountId.InterestIncome, (UInt128)interestDue, 0, TransferType.Transfer)
+            new LedgerTransfer(ID.Create(), loanDebitAccountId, (ulong)LedgerAccountId.InterestIncome, (UInt128)interestDue, 0, TransferType.Transfer)
         ]);
     }
 

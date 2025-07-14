@@ -33,10 +33,10 @@ public static class AccountEndpoints
                 
                 Notable accounts:
                 - Retail Bank Main Account: `1000`
-                - Owners Equity Account: `1001`
                 - Interest Income Account: `1002`
                 - Loan Control Account: `1003`
                 - Bad Debts Account: `1004`
+                - Fee Income Account: `1005`
                 - Commercial Bank: `2000`
                 """
             );
@@ -52,10 +52,10 @@ public static class AccountEndpoints
                 
                 Notable accounts:
                 - Retail Bank Main Account: `1000`
-                - Owners Equity Account: `1001`
                 - Interest Income Account: `1002`
                 - Loan Control Account: `1003`
                 - Bad Debts Account: `1004`
+                - Fee Income Account: `1005`
                 - Commercial Bank: `2000`
                 """
             );

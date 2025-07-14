@@ -1,7 +1,7 @@
 export function formatCurrency(value: number) {
   return value >= 0
-    ? `Đ ${formatMoney(value)}`
-    : `-Đ ${formatMoney(-value)}`;
+    ? `Đ ${formatMoney(value)} Dr`
+    : `Đ ${formatMoney(-value)} Cr`;
 }
 
 export function formatMoney(value: number) {
