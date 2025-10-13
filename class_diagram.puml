@@ -1,0 +1,472 @@
+@startuml RetailBank Backend Class Diagram
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 10
+skinparam packageFontSize 12
+
+package "RetailBank.Backend" {
+    
+    package "Program.cs" {
+        class Program {
+            +Main()
+        }
+    }
+    
+    package "Endpoints" {
+        class AccountEndpoints {
+            +CreateTransactionalAccount()
+            +GetAccounts()
+            +GetAccount()
+            +GetAccountTransfers()
+            +GetAccountLoans()
+        }
+        
+        class TransferEndpoints {
+            +CreateTransfer()
+            +GetTransfers()
+            +GetTransfer()
+        }
+        
+        class LoanEndpoints {
+            +CreateLoanAccount()
+        }
+        
+        class SimulationEndpoints {
+            +StartSimulation()
+            +StopSimulation()
+        }
+        
+        class ReportingEndpoints {
+            +GetReports()
+        }
+        
+        class Bootstrapper {
+            +AddEndpoints()
+        }
+    }
+    
+    package "Services" {
+        class AccountService {
+            -ledgerRepository: LedgerRepository
+            +CreateTransactionalAccount()
+            +GetAccounts()
+            +GetAccount()
+            +GetAccountTransfers()
+            +GetAccountLoans()
+            -GenerateTransactionalAccountNumber()
+        }
+        
+        class TransferService {
+            -ledgerRepository: LedgerRepository
+            -interbankClient: InterbankClient
+            -options: IOptions<TransferOptions>
+            -simOptions: IOptions<SimulationOptions>
+            +GetTransfer()
+            +GetTransfers()
+            +Transfer()
+            +PaySalary()
+            +GetRecentVolume()
+            -ExternalCommercialTransfer()
+            +GetBankCode()
+        }
+        
+        class LoanService {
+            -ledgerRepository: LedgerRepository
+            -options: IOptions<LoanOptions>
+            +CreateLoanAccount()
+            +PayInstallment()
+            -CalculateInstallment()
+            -GenerateLoanAccountNumber()
+        }
+        
+        class InterbankClient {
+            -httpClient: HttpClient
+            -options: IOptions<InterbankTransferOptions>
+            -logger: ILogger<InterbankClient>
+            +TryExternalTransfer()
+            -TryGetExternalAccountBalance()
+            -TryCreateExternalLoan()
+            -TryExternalTransferInternal()
+        }
+        
+        class TigerBeetleClientProvider {
+            -_tbAddress: string
+            +Client: Client
+            +InitialiseClient()
+            +ResetClient()
+        }
+        
+        class IdempotencyCache {
+            -cache: IMemoryCache
+            +Insert<T>()
+            +InsertAndThrow<T>()
+            +Clear<T>()
+        }
+        
+        class SimulationControllerService {
+            -options: IOptions<SimulationOptions>
+            +IsRunning: bool
+            +UnixStartTime: ulong
+            +TimeScale: uint
+            +Start()
+            +Stop()
+            +TimestampToSim()
+        }
+        
+        class SimulationRunner {
+            -logger: ILogger<SimulationRunner>
+            -loanService: LoanService
+            -transferService: TransferService
+            -accountService: AccountService
+            -simulationController: SimulationControllerService
+            +ExecuteAsync()
+            -RunSimulationStepAsync()
+            -PaySalaries()
+            -PayInstallments()
+        }
+        
+        class Bootstrapper {
+            +AddServices()
+        }
+    }
+    
+    package "Repositories" {
+        class LedgerRepository {
+            -tbClientProvider: TigerBeetleClientProvider
+            +LedgerId: uint
+            +TransferCode: ushort
+            +CreateAccount()
+            +GetAccounts()
+            +GetAccount()
+            +GetAccountTransfers()
+            +GetTransfers()
+            +GetTransfer()
+            +Transfer()
+            +TransferLinked()
+            +BalanceAndCloseCredit()
+            +InitialiseInternalAccounts()
+            -TransferBatch()
+            -ThrowBatchError()
+        }
+    }
+    
+    package "Models" {
+        package "Ledger" {
+            class LedgerAccount {
+                +Id: UInt128
+                +AccountType: LedgerAccountType
+                +DebitOrder: DebitOrder?
+                +Closed: bool
+                +DebitsPending: UInt128
+                +DebitsPosted: UInt128
+                +CreditsPending: UInt128
+                +CreditsPosted: UInt128
+                +Cursor: ulong
+                +BalancePending: Int128
+                +BalancePosted: Int128
+                +ToAccount()
+            }
+            
+            class LedgerTransfer {
+                +Id: UInt128
+                +DebitAccountId: UInt128
+                +CreditAccountId: UInt128
+                +Amount: UInt128
+                +Reference: ulong
+                +TransferType: TransferType
+                +ParentId: UInt128?
+                +Cursor: ulong
+                +ToTransfer()
+            }
+            
+            class DebitOrder {
+                +DebitAccountId: UInt128
+                +Amount: ulong
+            }
+            
+            enum LedgerAccountType {
+                Internal = 1000
+                Transactional = 2000
+                Loan = 3000
+            }
+            
+            enum LedgerAccountId {
+                InterestIncome = 1002
+                BadDebts = 1004
+                FeeIncome = 1005
+            }
+            
+            enum Bank {
+                Retail = 1000
+                Commercial = 2000
+            }
+            
+            enum TransferType {
+                Transfer = 0
+                StartTransfer = 2
+                CompleteTransfer = 4
+                CancelTransfer = 8
+                BalanceDebit = 0x10
+                BalanceCredit = 0x20
+                CloseDebit = 0x40 | StartTransfer
+                CloseCredit = 0x80 | StartTransfer
+            }
+            
+            enum TransferSide {
+                Debit
+                Credit
+            }
+        }
+        
+        package "Dtos" {
+            class AccountDto {
+                +Id: string
+                +AccountType: LedgerAccountType
+                +Balance: BalanceDto
+                +Closed: bool
+                +Cursor: ulong
+            }
+            
+            class TransferDto {
+                +Id: string
+                +DebitAccountId: string
+                +CreditAccountId: string
+                +Amount: UInt128
+                +Reference: ulong
+                +TransferType: TransferType
+                +ParentId: string?
+                +Cursor: ulong
+            }
+            
+            class BalanceDto {
+                +Pending: Int128
+                +Posted: Int128
+            }
+            
+            class CreateTransactionAccountRequest {
+                +SalaryCents: ulong
+            }
+            
+            class CreateTransactionalAccountResponse {
+                +AccountId: string
+            }
+            
+            class CreateTransferRequest {
+                +From: string
+                +To: string
+                +AmountCents: UInt128
+                +Reference: ulong
+            }
+            
+            class CreateTransferResponse {
+                +TransferId: string
+            }
+            
+            class CreateLoanAccountRequest {
+                +DebtorAccountId: string
+                +LoanAmountCents: ulong
+            }
+            
+            class CreateLoanAccountResponse {
+                +AccountId: string
+            }
+            
+            class CursorPagination<T> {
+                +Items: IEnumerable<T>
+                +Next: string?
+            }
+        }
+        
+        package "Interbank" {
+            class CreateCommercialAccountRequest {
+                +NotifyUrl: string
+            }
+            
+            class CreateCommercialLoanRequest {
+                +Amount: decimal
+            }
+            
+            class CreateCommercialTransferRequest {
+                +ToAccount: string
+                +ToBank: string
+                +Amount: decimal
+                +Description: string
+            }
+            
+            class GetCommercialAccountBalanceResponse {
+                +Balance: decimal
+            }
+            
+            enum NotificationResult {
+                Succeeded
+                Rejected
+                AccountNotFound
+                UnknownFailure
+            }
+        }
+        
+        package "Options" {
+            class ConnectionStrings {
+                +TigerBeetle: string
+            }
+            
+            class TransferOptions {
+                +TransferFeePercent: decimal
+                +DepositFeePercent: decimal
+            }
+            
+            class LoanOptions {
+                +AnnualInterestRatePercentage: decimal
+                +LoanPeriodMonths: uint
+            }
+            
+            class InterbankTransferOptions {
+                +ClientCertificatePath: string
+                +ClientCertificateKeyPath: string
+                +Banks: Dictionary<Bank, InterbankTransferBankDetails>
+                +RetryCount: int
+                +DelaySeconds: int
+                +LoanAmountCents: UInt128
+            }
+            
+            class SimulationOptions {
+                +TimeScale: uint
+                +SimulationStart: ulong
+            }
+            
+            class InterbankTransferBankDetails {
+                +CreateAccountUrl: string
+                +GetAccountUrl: string
+                +IssueLoanUrl: string
+                +TransferUrl: string
+                +NotifyUrl: string
+            }
+        }
+    }
+    
+    package "Exceptions" {
+        class UserException {
+            +Message: string
+        }
+        
+        class AccountNotFoundException {
+            +AccountId: UInt128
+        }
+        
+        class InvalidAccountException {
+            +ActualType: LedgerAccountType
+            +ExpectedType: LedgerAccountType
+        }
+        
+        class ExternalTransferFailedException {
+        }
+        
+        class IdempotencyException {
+        }
+        
+        class TigerBeetleResultException<T> {
+            +ErrorCode: T
+        }
+    }
+    
+    package "ExceptionHandlers" {
+        class ExceptionHandler {
+            +TryHandleAsync()
+        }
+        
+        class UserExceptionHandler {
+            +TryHandleAsync()
+        }
+        
+        class ValidationExceptionHandler {
+            +TryHandleAsync()
+        }
+        
+        class BadHttpRequestExceptionHandler {
+            +TryHandleAsync()
+        }
+        
+        class Bootstrapper {
+            +AddExceptionHandlers()
+        }
+    }
+    
+    package "Validation" {
+        class CreateTransferRequestValidator {
+            +Validate()
+        }
+        
+        class CreateLoanAccountRequestValidator {
+            +Validate()
+        }
+        
+        class StartSimulationRequestValidator {
+            +Validate()
+        }
+        
+        class ValidationConstants {
+            +MinAccountNumber: ulong
+            +MaxAccountNumber: ulong
+            +MinTransferAmount: UInt128
+            +MaxTransferAmount: UInt128
+        }
+        
+        class Bootstrapper {
+            +AddValidators()
+        }
+    }
+    
+    package "Extensions" {
+        class DecimalExt {
+            +Pow()
+        }
+        
+        class UInt128Ext {
+            +ToHex()
+        }
+    }
+}
+
+' Relationships
+AccountEndpoints --> AccountService : uses
+TransferEndpoints --> TransferService : uses
+LoanEndpoints --> LoanService : uses
+SimulationEndpoints --> SimulationControllerService : uses
+
+AccountService --> LedgerRepository : uses
+TransferService --> LedgerRepository : uses
+TransferService --> InterbankClient : uses
+LoanService --> LedgerRepository : uses
+SimulationRunner --> AccountService : uses
+SimulationRunner --> TransferService : uses
+SimulationRunner --> LoanService : uses
+SimulationRunner --> SimulationControllerService : uses
+
+LedgerRepository --> TigerBeetleClientProvider : uses
+
+AccountService --> LedgerAccount : creates/uses
+TransferService --> LedgerTransfer : creates/uses
+LoanService --> LedgerAccount : creates/uses
+
+AccountEndpoints --> AccountDto : returns
+TransferEndpoints --> TransferDto : returns
+LoanEndpoints --> CreateLoanAccountResponse : returns
+
+TransferService --> InterbankClient : uses
+InterbankClient --> CreateCommercialAccountRequest : uses
+InterbankClient --> CreateCommercialLoanRequest : uses
+InterbankClient --> CreateCommercialTransferRequest : uses
+
+AccountService --> DebitOrder : creates
+LoanService --> DebitOrder : creates
+
+LedgerAccount --> LedgerAccountType : uses
+LedgerTransfer --> TransferType : uses
+LedgerTransfer --> Bank : uses
+
+TransferService --> IdempotencyCache : uses
+TransferEndpoints --> IdempotencyCache : uses
+
+@enduml
+
