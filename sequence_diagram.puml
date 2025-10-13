@@ -1,0 +1,325 @@
+@startuml RetailBank Backend Sequence Diagram
+
+!theme plain
+skinparam sequenceMessageAlignment below
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title RetailBank Backend - Key Workflows Sequence Diagram
+
+actor "Client" as Client
+participant "API Endpoints" as Endpoints
+participant "Transfer Service" as TransferService
+participant "Account Service" as AccountService
+participant "Loan Service" as LoanService
+participant "Interbank Client" as InterbankClient
+participant "Ledger Repository" as LedgerRepository
+participant "TigerBeetle" as TigerBeetle
+participant "Commercial Bank" as CommercialBank
+participant "Idempotency Cache" as IdempotencyCache
+participant "Simulation Runner" as SimulationRunner
+
+== Account Creation Workflow ==
+
+Client -> Endpoints: POST /accounts (CreateTransactionalAccountRequest)
+activate Endpoints
+
+Endpoints -> AccountService: CreateTransactionalAccount(salaryCents)
+activate AccountService
+
+AccountService -> AccountService: GenerateTransactionalAccountNumber()
+AccountService -> LedgerRepository: CreateAccount(LedgerAccount)
+activate LedgerRepository
+
+LedgerRepository -> TigerBeetle: CreateAccountAsync(account)
+activate TigerBeetle
+TigerBeetle --> LedgerRepository: CreateAccountResult
+deactivate TigerBeetle
+
+LedgerRepository --> AccountService: void
+deactivate LedgerRepository
+
+AccountService --> Endpoints: UInt128 (accountId)
+deactivate AccountService
+
+Endpoints --> Client: CreateTransactionalAccountResponse
+deactivate Endpoints
+
+== Internal Transfer Workflow ==
+
+Client -> Endpoints: POST /transfers (CreateTransferRequest)
+activate Endpoints
+
+Endpoints -> Endpoints: Validate request
+Endpoints -> IdempotencyCache: InsertAndThrow(request)
+activate IdempotencyCache
+
+alt Idempotency check fails
+    IdempotencyCache --> Endpoints: IdempotencyException
+    Endpoints --> Client: 409 Conflict
+    deactivate IdempotencyCache
+    deactivate Endpoints
+else Idempotency check passes
+    IdempotencyCache --> Endpoints: void
+    deactivate IdempotencyCache
+
+    Endpoints -> TransferService: Transfer(payerAccountId, payeeAccountId, amount, reference)
+    activate TransferService
+
+    TransferService -> LedgerRepository: GetAccount(payerAccountId)
+    activate LedgerRepository
+    LedgerRepository -> TigerBeetle: LookupAccountAsync(accountId)
+    activate TigerBeetle
+    TigerBeetle --> LedgerRepository: Account?
+    deactivate TigerBeetle
+    LedgerRepository --> TransferService: LedgerAccount?
+    deactivate LedgerRepository
+
+    TransferService -> TransferService: Validate account types
+    TransferService -> TransferService: GetBankCode(payeeAccountId)
+
+    alt Internal Transfer (Retail Bank)
+        TransferService -> TransferService: Calculate fee amount
+        TransferService -> LedgerRepository: TransferLinked([transfer, feeTransfer])
+        activate LedgerRepository
+        
+        LedgerRepository -> TigerBeetle: CreateTransfersAsync(transfers)
+        activate TigerBeetle
+        TigerBeetle --> LedgerRepository: CreateTransfersResult[]
+        deactivate TigerBeetle
+        
+        LedgerRepository --> TransferService: UInt128[] (transferIds)
+        deactivate LedgerRepository
+        
+        TransferService --> Endpoints: UInt128 (transferId)
+    else External Transfer (Commercial Bank)
+        TransferService -> TransferService: Calculate fee amount
+        TransferService -> LedgerRepository: TransferLinked([pendingTransfers])
+        activate LedgerRepository
+        
+        LedgerRepository -> TigerBeetle: CreateTransfersAsync(transfers)
+        activate TigerBeetle
+        TigerBeetle --> LedgerRepository: CreateTransfersResult[]
+        deactivate TigerBeetle
+        
+        LedgerRepository --> TransferService: UInt128[] (transferIds)
+        deactivate LedgerRepository
+
+        TransferService -> InterbankClient: TryExternalTransfer(bank, from, to, amount, reference)
+        activate InterbankClient
+
+        InterbankClient -> CommercialBank: POST /api/account (CreateCommercialAccountRequest)
+        activate CommercialBank
+        CommercialBank --> InterbankClient: HttpResponseMessage
+        deactivate CommercialBank
+
+        InterbankClient -> CommercialBank: GET /api/account/me/balance
+        activate CommercialBank
+        CommercialBank --> InterbankClient: GetCommercialAccountBalanceResponse
+        deactivate CommercialBank
+
+        alt External balance insufficient
+            InterbankClient -> CommercialBank: POST /api/loan (CreateCommercialLoanRequest)
+            activate CommercialBank
+            CommercialBank --> InterbankClient: HttpResponseMessage
+            deactivate CommercialBank
+        end
+
+        InterbankClient -> CommercialBank: POST /api/transaction (CreateCommercialTransferRequest)
+        activate CommercialBank
+        CommercialBank --> InterbankClient: HttpResponseMessage
+        deactivate CommercialBank
+
+        InterbankClient --> TransferService: NotificationResult
+        deactivate InterbankClient
+
+        alt Transfer Succeeded
+            TransferService -> LedgerRepository: TransferLinked([completionTransfers])
+            activate LedgerRepository
+            LedgerRepository -> TigerBeetle: CreateTransfersAsync(transfers)
+            activate TigerBeetle
+            TigerBeetle --> LedgerRepository: CreateTransfersResult[]
+            deactivate TigerBeetle
+            LedgerRepository --> TransferService: UInt128[] (transferIds)
+            deactivate LedgerRepository
+        else Transfer Failed
+            TransferService -> LedgerRepository: TransferLinked([cancellationTransfers])
+            activate LedgerRepository
+            LedgerRepository -> TigerBeetle: CreateTransfersAsync(transfers)
+            activate TigerBeetle
+            TigerBeetle --> LedgerRepository: CreateTransfersResult[]
+            deactivate TigerBeetle
+            LedgerRepository --> TransferService: UInt128[] (transferIds)
+            deactivate LedgerRepository
+        end
+
+        TransferService --> Endpoints: UInt128 (transferId)
+    end
+
+    deactivate TransferService
+
+    Endpoints --> Client: CreateTransferResponse
+    deactivate Endpoints
+end
+
+== Loan Creation Workflow ==
+
+Client -> Endpoints: POST /loans (CreateLoanAccountRequest)
+activate Endpoints
+
+Endpoints -> Endpoints: Validate request
+Endpoints -> LoanService: CreateLoanAccount(debtorAccountId, loanAmount)
+activate LoanService
+
+LoanService -> LedgerRepository: GetAccount(debtorAccountId)
+activate LedgerRepository
+LedgerRepository -> TigerBeetle: LookupAccountAsync(accountId)
+activate TigerBeetle
+TigerBeetle --> LedgerRepository: Account?
+deactivate TigerBeetle
+LedgerRepository --> LoanService: LedgerAccount?
+deactivate LedgerRepository
+
+LoanService -> LoanService: Validate account type
+LoanService -> LoanService: GenerateLoanAccountNumber()
+LoanService -> LoanService: CalculateInstallment(amount, rate, months)
+
+LoanService -> LedgerRepository: CreateAccount(LedgerAccount)
+activate LedgerRepository
+LedgerRepository -> TigerBeetle: CreateAccountAsync(account)
+activate TigerBeetle
+TigerBeetle --> LedgerRepository: CreateAccountResult
+deactivate TigerBeetle
+LedgerRepository --> LoanService: void
+deactivate LedgerRepository
+
+LoanService -> LedgerRepository: Transfer(LedgerTransfer)
+activate LedgerRepository
+LedgerRepository -> TigerBeetle: CreateTransferAsync(transfer)
+activate TigerBeetle
+TigerBeetle --> LedgerRepository: CreateTransferResult
+deactivate TigerBeetle
+LedgerRepository --> LoanService: UInt128 (transferId)
+deactivate LedgerRepository
+
+LoanService --> Endpoints: UInt128 (loanAccountId)
+deactivate LoanService
+
+Endpoints --> Client: CreateLoanAccountResponse
+deactivate Endpoints
+
+== Simulation Workflow ==
+
+note over SimulationRunner: Background service running continuously
+
+SimulationRunner -> SimulationRunner: Check if simulation is running
+
+alt Simulation is running
+    SimulationRunner -> SimulationRunner: RunSimulationStepAsync()
+    
+    note over SimulationRunner: Pay Salaries
+    SimulationRunner -> AccountService: GetAccounts(Transactional)
+    activate AccountService
+    AccountService -> LedgerRepository: GetAccounts(Transactional)
+    activate LedgerRepository
+    LedgerRepository -> TigerBeetle: QueryAccountsAsync(filter)
+    activate TigerBeetle
+    TigerBeetle --> LedgerRepository: Account[]
+    deactivate TigerBeetle
+    LedgerRepository --> AccountService: LedgerAccount[]
+    deactivate LedgerRepository
+    AccountService --> SimulationRunner: LedgerAccount[]
+    deactivate AccountService
+
+    loop For each account
+        SimulationRunner -> TransferService: PaySalary(accountId)
+        activate TransferService
+        TransferService -> LedgerRepository: GetAccount(accountId)
+        activate LedgerRepository
+        LedgerRepository -> TigerBeetle: LookupAccountAsync(accountId)
+        activate TigerBeetle
+        TigerBeetle --> LedgerRepository: Account?
+        deactivate TigerBeetle
+        LedgerRepository --> TransferService: LedgerAccount?
+        deactivate LedgerRepository
+
+        TransferService -> TransferService: Calculate fee amount
+        TransferService -> LedgerRepository: TransferLinked([salaryTransfer, feeTransfer])
+        activate LedgerRepository
+        LedgerRepository -> TigerBeetle: CreateTransfersAsync(transfers)
+        activate TigerBeetle
+        TigerBeetle --> LedgerRepository: CreateTransfersResult[]
+        deactivate TigerBeetle
+        LedgerRepository --> TransferService: UInt128[] (transferIds)
+        deactivate LedgerRepository
+        TransferService --> SimulationRunner: void
+        deactivate TransferService
+    end
+
+    note over SimulationRunner: Pay Installments
+    SimulationRunner -> LoanService: GetAccounts(Loan)
+    activate LoanService
+    LoanService -> LedgerRepository: GetAccounts(Loan)
+    activate LedgerRepository
+    LedgerRepository -> TigerBeetle: QueryAccountsAsync(filter)
+    activate TigerBeetle
+    TigerBeetle --> LedgerRepository: Account[]
+    deactivate TigerBeetle
+    LedgerRepository --> LoanService: LedgerAccount[]
+    deactivate LedgerRepository
+    LoanService --> SimulationRunner: LedgerAccount[]
+    deactivate LoanService
+
+    loop For each loan account
+        SimulationRunner -> LoanService: PayInstallment(loanAccountId)
+        activate LoanService
+        LoanService -> LedgerRepository: GetAccount(loanAccountId)
+        activate LedgerRepository
+        LedgerRepository -> TigerBeetle: LookupAccountAsync(accountId)
+        activate TigerBeetle
+        TigerBeetle --> LedgerRepository: Account?
+        deactivate TigerBeetle
+        LedgerRepository --> LoanService: LedgerAccount?
+        deactivate LedgerRepository
+
+        LoanService -> LedgerRepository: GetAccount(debitAccountId)
+        activate LedgerRepository
+        LedgerRepository -> TigerBeetle: LookupAccountAsync(accountId)
+        activate TigerBeetle
+        TigerBeetle --> LedgerRepository: Account?
+        deactivate TigerBeetle
+        LedgerRepository --> LoanService: LedgerAccount?
+        deactivate LedgerRepository
+
+        LoanService -> LoanService: Calculate interest and amount due
+
+        alt Sufficient funds
+            LoanService -> LedgerRepository: TransferLinked([principalTransfer, interestTransfer])
+            activate LedgerRepository
+            LedgerRepository -> TigerBeetle: CreateTransfersAsync(transfers)
+            activate TigerBeetle
+            TigerBeetle --> LedgerRepository: CreateTransfersResult[]
+            deactivate TigerBeetle
+            LedgerRepository --> LoanService: UInt128[] (transferIds)
+            deactivate LedgerRepository
+        else Insufficient funds
+            LoanService -> LedgerRepository: BalanceAndCloseCredit(BadDebts, loanAccountId)
+            activate LedgerRepository
+            LedgerRepository -> TigerBeetle: CreateTransfersAsync([balanceTransfer, closeTransfer])
+            activate TigerBeetle
+            TigerBeetle --> LedgerRepository: CreateTransfersResult[]
+            deactivate TigerBeetle
+            LedgerRepository --> LoanService: (UInt128, UInt128) (transferIds)
+            deactivate LedgerRepository
+        end
+
+        LoanService --> SimulationRunner: void
+        deactivate LoanService
+    end
+
+    SimulationRunner -> SimulationRunner: Wait for next simulation step
+end
+
+@enduml
+

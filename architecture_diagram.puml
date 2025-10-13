@@ -1,0 +1,156 @@
+@startuml RetailBank Backend Architecture Diagram
+
+!theme plain
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam componentFontSize 10
+skinparam packageFontSize 12
+
+title RetailBank Backend System Architecture
+
+package "External Systems" {
+    [Commercial Bank API] as CommercialBank
+    [TigerBeetle Database] as TigerBeetle
+    [Client Applications] as Clients
+}
+
+package "RetailBank Backend" {
+    
+    package "Presentation Layer" {
+        [Minimal API Endpoints] as Endpoints
+        [Swagger/OpenAPI] as Swagger
+        [Exception Handlers] as ExceptionHandlers
+    }
+    
+    package "Application Layer" {
+        [Account Service] as AccountService
+        [Transfer Service] as TransferService
+        [Loan Service] as LoanService
+        [Simulation Controller] as SimulationController
+        [Idempotency Cache] as IdempotencyCache
+    }
+    
+    package "Domain Layer" {
+        [Ledger Models] as LedgerModels
+        [DTOs] as DTOs
+        [Business Rules] as BusinessRules
+        [Validation] as Validation
+    }
+    
+    package "Infrastructure Layer" {
+        [Ledger Repository] as LedgerRepository
+        [Interbank Client] as InterbankClient
+        [TigerBeetle Client Provider] as TigerBeetleProvider
+        [Memory Cache] as MemoryCache
+    }
+    
+    package "Background Services" {
+        [Simulation Runner] as SimulationRunner
+    }
+    
+    package "Configuration" {
+        [Options Pattern] as Options
+        [Dependency Injection] as DI
+    }
+}
+
+' External connections
+Clients --> Endpoints : HTTP/HTTPS
+Endpoints --> Swagger : API Documentation
+Endpoints --> ExceptionHandlers : Error Handling
+
+' Presentation to Application
+Endpoints --> AccountService : Account Operations
+Endpoints --> TransferService : Transfer Operations
+Endpoints --> LoanService : Loan Operations
+Endpoints --> SimulationController : Simulation Control
+
+' Application Layer interactions
+AccountService --> LedgerRepository : Data Access
+TransferService --> LedgerRepository : Data Access
+TransferService --> InterbankClient : External Transfers
+TransferService --> IdempotencyCache : Duplicate Prevention
+LoanService --> LedgerRepository : Data Access
+SimulationController --> SimulationRunner : Control
+
+' Application to Domain
+AccountService --> LedgerModels : Domain Objects
+TransferService --> LedgerModels : Domain Objects
+TransferService --> DTOs : Data Transfer
+LoanService --> LedgerModels : Domain Objects
+Endpoints --> DTOs : Request/Response
+Endpoints --> Validation : Input Validation
+
+' Infrastructure connections
+LedgerRepository --> TigerBeetleProvider : Database Access
+TigerBeetleProvider --> TigerBeetle : TCP Connection
+InterbankClient --> CommercialBank : HTTP/HTTPS
+IdempotencyCache --> MemoryCache : Caching
+
+' Background services
+SimulationRunner --> AccountService : Salary Payments
+SimulationRunner --> LoanService : Installment Payments
+SimulationRunner --> TransferService : Volume Calculation
+
+' Configuration
+DI --> AccountService : Service Registration
+DI --> TransferService : Service Registration
+DI --> LoanService : Service Registration
+DI --> LedgerRepository : Service Registration
+DI --> InterbankClient : Service Registration
+DI --> TigerBeetleProvider : Service Registration
+DI --> IdempotencyCache : Service Registration
+DI --> SimulationController : Service Registration
+DI --> SimulationRunner : Service Registration
+
+Options --> AccountService : Configuration
+Options --> TransferService : Configuration
+Options --> LoanService : Configuration
+Options --> InterbankClient : Configuration
+Options --> SimulationController : Configuration
+
+' Data flow annotations
+note right of TigerBeetle
+  **TigerBeetle Database**
+  - Financial ledger storage
+  - ACID transactions
+  - High performance
+  - 127.0.0.1:4000
+end note
+
+note right of CommercialBank
+  **Commercial Bank API**
+  - External bank integration
+  - Account creation
+  - Loan issuance
+  - Transfer processing
+  - HTTPS with certificates
+end note
+
+note right of Endpoints
+  **Minimal API Endpoints**
+  - Account management
+  - Transfer operations
+  - Loan processing
+  - Simulation control
+  - Reporting
+end note
+
+note right of LedgerRepository
+  **Ledger Repository**
+  - TigerBeetle abstraction
+  - Account operations
+  - Transfer operations
+  - Batch processing
+end note
+
+note right of SimulationRunner
+  **Background Simulation**
+  - Salary payments
+  - Loan installments
+  - Configurable time scale
+  - Automated processing
+end note
+
+@enduml
+
