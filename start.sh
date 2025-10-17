@@ -113,10 +113,6 @@ server {
 
     error_log /var/log/nginx/mtls-error.log info;
 
-    if (\$is_valid_ou = no) {
-        return 403;
-    }
-
     location / {
         proxy_pass http://localhost:5000;
     }
@@ -124,16 +120,6 @@ server {
 EOF
 
 echo "Trying to add the OU authorisation to the nginx config. Please work bruv"
-sudo tee /etc/nginx/conf.d/ssl_ou_map.conf > /dev/null <<EOF
-map \$ssl_client_s_dn \$is_valid_ou {
-    default no;
-    ~OU=sumsang-company yes;
-    ~OU=retail-bank yes;
-    ~OU=commercial-bank yes;
-    ~OU=pear-company yes;
-    ~OU=thoh yes;
-}
-EOF
 
 # Setup ssl for the frontend
 sudo ln -sf $NGINX_CONF $NGINX_LINK
