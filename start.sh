@@ -105,8 +105,8 @@ server {
 server {
     listen 443 ssl;
     server_name $API_DOMAIN;
-    ssl_certificate     /etc/letsencrypt/live/retail-bank-api.projects.bbdgrad.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/retail-bank-api.projects.bbdgrad.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/$API_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$API_DOMAIN/privkey.pem;
 
     ssl_client_certificate /etc/ssl/certs/client-ca.crt;
     ssl_verify_client on;
