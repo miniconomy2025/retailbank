@@ -26,7 +26,6 @@ jobs:
       - name: Get EC2 public IP from the repo variable
         id: tf_output
         run: |
-          echo "EC2_HOST=${{ vars.EC2_HOST }}"
           echo "EC2_HOST=${{ vars.EC2_HOST }}" >> $GITHUB_ENV
 
       - name: Setup .NET 8
