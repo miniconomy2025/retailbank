@@ -59,8 +59,10 @@ FE_DOMAIN="miniconomyretail.za.bz"
 API_DOMAIN="api.miniconomyretail.za.bz"
 
 EMAIL="admin@$FE_DOMAIN" 
-NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
-NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
+FE_NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
+FE_NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
+API_NGINX_CONF="/etc/nginx/sites-available/$API_DOMAIN"
+API_NGINX_LINK="/etc/nginx/sites-enabled/$API_DOMAIN"
 FRONTEND_APP_DIR="/var/www/retail-bank"
 
 sudo mkdir -p /var/www/retail-bank
@@ -72,7 +74,7 @@ sudo apt update
 sudo apt install -y nginx certbot python3-certbot-nginx
 
 echo "Creating temporary HTTP-only nginx config for $FE_DOMAIN..."
-sudo tee $NGINX_CONF > /dev/null <<EOF
+sudo tee $FE_NGINX_CONF > /dev/null <<EOF
 server {
     listen 80;
     server_name $FE_DOMAIN;
@@ -99,61 +101,27 @@ server {
     }
     location ~ /\. {
         deny all;
+    }
+}
+EOF
+sudo tee $API_NGINX_CONF > /dev/null <<EOF
+server {
+    listen 80;
+    server_name $API_DOMAIN;
+
+    location / {
+        proxy_pass http://localhost:5000;
     }
 }
 EOF
 
 # Setup ssl for the frontend
-sudo ln -sf $NGINX_CONF $NGINX_LINK
+sudo ln -sf $FE_NGINX_CONF $FE_NGINX_LINK
+sudo ln -sf $API_NGINX_CONF $API_NGINX_LINK
 echo "Testing Nginx Config"
 sudo nginx -t
 sudo systemctl reload nginx
 echo "Generating Certificates"
 sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --expand -d $FE_DOMAIN -d $API_DOMAIN
-
-sudo tee $NGINX_CONF > /dev/null <<EOF
-server {
-    listen 80;
-    server_name $FE_DOMAIN;
-
-    root $FRONTEND_APP_DIR;
-    index index.html;
-
-    location /api {
-        limit_except GET {
-            deny all;
-        }
-        rewrite ^/api/(.*)$ /\$1 break;
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Origin \$http_origin;
-        proxy_buffering off;
-    }
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-    location ~ /\. {
-        deny all;
-    }
-}
-
-server {
-    listen 443 ssl;
-    server_name $API_DOMAIN;
-    ssl_certificate     /etc/letsencrypt/live/$FE_DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$FE_DOMAIN/privkey.pem;
-
-    error_log /var/log/nginx/mtls-error.log info;
-
-    location / {
-        proxy_pass http://localhost:5000;
-    }
-}
-EOF
-
 sudo systemctl reload nginx
 echo "Finished"
