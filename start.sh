@@ -147,9 +147,6 @@ server {
     ssl_certificate     /etc/letsencrypt/live/$FE_DOMAIN/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$FE_DOMAIN/privkey.pem;
 
-    ssl_client_certificate /etc/ssl/certs/client-ca.crt;
-    ssl_verify_client on;
-
     error_log /var/log/nginx/mtls-error.log info;
 
     location / {
