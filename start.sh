@@ -109,7 +109,7 @@ echo "Testing Nginx Config"
 sudo nginx -t
 sudo systemctl reload nginx
 echo "Generating Certificates"
-sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d $FE_DOMAIN
+sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d $FE_DOMAIN $API_DOMAIN
 
 sudo tee $NGINX_CONF > /dev/null <<EOF
 server {
