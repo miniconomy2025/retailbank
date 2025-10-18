@@ -55,8 +55,8 @@ sudo systemctl status "$SERVICE_NAME" --no-pager
 # setup nginx and https
 echo "Setting up nginx and https"
 set -e
-FE_DOMAIN="retail-bank.projects.bbdgrad.com"
-API_DOMAIN="retail-bank-api.projects.bbdgrad.com"
+FE_DOMAIN="miniconomyretail.za.bz"
+API_DOMAIN="api.miniconomyretail.za.bz"
 
 EMAIL="admin@$FE_DOMAIN" 
 NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
