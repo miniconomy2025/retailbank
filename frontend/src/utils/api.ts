@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://api.miniconomyretail.za.bz";
+const API_BASE_URL = "https://miniconomyretail.za.bz/api";
 
 type Props = {
   method: string;
