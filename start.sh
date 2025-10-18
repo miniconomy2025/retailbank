@@ -101,6 +101,45 @@ server {
         deny all;
     }
 }
+EOF
+
+# Setup ssl for the frontend
+sudo ln -sf $NGINX_CONF $NGINX_LINK
+echo "Testing Nginx Config"
+sudo nginx -t
+sudo systemctl reload nginx
+echo "Generating Certificates"
+sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d $FE_DOMAIN
+
+sudo tee $NGINX_CONF > /dev/null <<EOF
+server {
+    listen 80;
+    server_name $FE_DOMAIN;
+
+    root $FRONTEND_APP_DIR;
+    index index.html;
+
+    location /api {
+        limit_except GET {
+            deny all;
+        }
+        rewrite ^/api/(.*)$ /\$1 break;
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Origin \$http_origin;
+        proxy_buffering off;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+    location ~ /\. {
+        deny all;
+    }
+}
 
 server {
     listen 443 ssl;
@@ -119,12 +158,5 @@ server {
 }
 EOF
 
-# Setup ssl for the frontend
-sudo ln -sf $NGINX_CONF $NGINX_LINK
-echo "Testing Nginx Config"
-sudo nginx -t
-sudo systemctl reload nginx
-echo "Generating Certificates"
-sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d $FE_DOMAIN
 sudo systemctl reload nginx
 echo "Finished"
