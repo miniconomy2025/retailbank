@@ -4,7 +4,7 @@ using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
-public class AccountService(LedgerRepository ledgerRepository)
+public class AccountService(ILedgerRepository ledgerRepository)
 {
     private const uint BatchMax = 8189;
 

@@ -1,6 +1,7 @@
 ﻿using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Options;
 using RetailBank.Models.Options;
+using RetailBank.Repositories;
 
 namespace RetailBank.Services;
 
@@ -34,6 +35,7 @@ public static class Bootstrapper
 
         return services
             .AddSingleton<TigerBeetleClientProvider>()
+            .AddSingleton<ILedgerRepository, LedgerRepository>()
             .AddSingleton<IdempotencyCache>()
             .AddSingleton<AccountService>()
             .AddSingleton<LoanService>()

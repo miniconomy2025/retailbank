@@ -26,7 +26,7 @@ public static class SimulationEndpoints
 
     public static async Task<IResult> StartSimulation(
         SimulationControllerService simulationController,
-        LedgerRepository ledgerRepository,
+        ILedgerRepository ledgerRepository,
         StartSimulationRequest request,
         InterbankClient interbankClient,
         IValidator<StartSimulationRequest> validator
