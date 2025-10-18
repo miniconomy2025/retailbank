@@ -109,7 +109,7 @@ echo "Testing Nginx Config"
 sudo nginx -t
 sudo systemctl reload nginx
 echo "Generating Certificates"
-sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d $FE_DOMAIN -d $API_DOMAIN
+sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --expand -d $FE_DOMAIN -d $API_DOMAIN
 
 sudo tee $NGINX_CONF > /dev/null <<EOF
 server {
@@ -144,8 +144,8 @@ server {
 server {
     listen 443 ssl;
     server_name $API_DOMAIN;
-    ssl_certificate     /etc/letsencrypt/live/$API_DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$API_DOMAIN/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/$FE_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$FE_DOMAIN/privkey.pem;
 
     ssl_client_certificate /etc/ssl/certs/client-ca.crt;
     ssl_verify_client on;
