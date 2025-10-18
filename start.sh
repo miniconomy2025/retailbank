@@ -119,15 +119,12 @@ server {
 }
 EOF
 
-echo "Trying to add the OU authorisation to the nginx config. Please work bruv"
-
 # Setup ssl for the frontend
 sudo ln -sf $NGINX_CONF $NGINX_LINK
+echo "Testing Nginx Config"
 sudo nginx -t
 sudo systemctl reload nginx
+echo "Generating Certificates"
 sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d $FE_DOMAIN
 sudo systemctl reload nginx
-
-
-
-
+echo "Finished"
