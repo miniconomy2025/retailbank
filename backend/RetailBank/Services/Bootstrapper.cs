@@ -18,18 +18,7 @@ public static class Bootstrapper
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "RetailBank/1.0");
-        }).ConfigurePrimaryHttpMessageHandler(provider =>
-        {
-            var options = provider.GetRequiredService<IOptions<InterbankTransferOptions>>();
-            var handler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
-                ClientCertificateOptions = ClientCertificateOption.Manual
-            };
-            handler.ClientCertificates.Add(new X509Certificate2(
-                options.Value.ClientCertificatePath
-            ));
-            return handler;
+            client.DefaultRequestHeaders.Add("Client-Id", "retail-bank");
         });
 
         return services

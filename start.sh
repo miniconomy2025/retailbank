@@ -55,12 +55,14 @@ sudo systemctl status "$SERVICE_NAME" --no-pager
 # setup nginx and https
 echo "Setting up nginx and https"
 set -e
-FE_DOMAIN="retail-bank.projects.bbdgrad.com"
-API_DOMAIN="retail-bank-api.projects.bbdgrad.com"
+FE_DOMAIN="miniconomyretail.za.bz"
+API_DOMAIN="api.miniconomyretail.za.bz"
 
 EMAIL="admin@$FE_DOMAIN" 
-NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
-NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
+FE_NGINX_CONF="/etc/nginx/sites-available/$FE_DOMAIN"
+FE_NGINX_LINK="/etc/nginx/sites-enabled/$FE_DOMAIN"
+API_NGINX_CONF="/etc/nginx/sites-available/$API_DOMAIN"
+API_NGINX_LINK="/etc/nginx/sites-enabled/$API_DOMAIN"
 FRONTEND_APP_DIR="/var/www/retail-bank"
 
 sudo mkdir -p /var/www/retail-bank
@@ -72,7 +74,7 @@ sudo apt update
 sudo apt install -y nginx certbot python3-certbot-nginx
 
 echo "Creating temporary HTTP-only nginx config for $FE_DOMAIN..."
-sudo tee $NGINX_CONF > /dev/null <<EOF
+sudo tee $FE_NGINX_CONF > /dev/null <<EOF
 server {
     listen 80;
     server_name $FE_DOMAIN;
@@ -101,21 +103,11 @@ server {
         deny all;
     }
 }
-
+EOF
+sudo tee $API_NGINX_CONF > /dev/null <<EOF
 server {
-    listen 443 ssl;
+    listen 80;
     server_name $API_DOMAIN;
-    ssl_certificate     /etc/letsencrypt/live/retail-bank-api.projects.bbdgrad.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/retail-bank-api.projects.bbdgrad.com/privkey.pem;
-
-    ssl_client_certificate /etc/ssl/certs/client-ca.crt;
-    ssl_verify_client on;
-
-    error_log /var/log/nginx/mtls-error.log info;
-
-    if (\$is_valid_ou = no) {
-        return 403;
-    }
 
     location / {
         proxy_pass http://localhost:5000;
@@ -123,25 +115,13 @@ server {
 }
 EOF
 
-echo "Trying to add the OU authorisation to the nginx config. Please work bruv"
-sudo tee /etc/nginx/conf.d/ssl_ou_map.conf > /dev/null <<EOF
-map \$ssl_client_s_dn \$is_valid_ou {
-    default no;
-    ~OU=sumsang-company yes;
-    ~OU=retail-bank yes;
-    ~OU=commercial-bank yes;
-    ~OU=pear-company yes;
-    ~OU=thoh yes;
-}
-EOF
-
 # Setup ssl for the frontend
-sudo ln -sf $NGINX_CONF $NGINX_LINK
+sudo ln -sf $FE_NGINX_CONF $FE_NGINX_LINK
+sudo ln -sf $API_NGINX_CONF $API_NGINX_LINK
+echo "Testing Nginx Config"
 sudo nginx -t
 sudo systemctl reload nginx
-sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d $FE_DOMAIN
+echo "Generating Certificates"
+sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --expand -d $FE_DOMAIN -d $API_DOMAIN
 sudo systemctl reload nginx
-
-
-
-
+echo "Finished"
