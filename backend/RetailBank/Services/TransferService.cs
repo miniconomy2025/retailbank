@@ -8,7 +8,7 @@ using TigerBeetle;
 
 namespace RetailBank.Services;
 
-public class TransferService(LedgerRepository ledgerRepository, InterbankClient interbankClient, IOptions<TransferOptions> options, IOptions<SimulationOptions> simOptions)
+public class TransferService(ILedgerRepository ledgerRepository, InterbankClient interbankClient, IOptions<TransferOptions> options, IOptions<SimulationOptions> simOptions)
 {
     public async Task<LedgerTransfer?> GetTransfer(UInt128 id)
     {

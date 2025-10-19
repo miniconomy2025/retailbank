@@ -5,7 +5,7 @@ using TigerBeetle;
 
 namespace RetailBank.Repositories;
 
-public class LedgerRepository(TigerBeetleClientProvider tbClientProvider)
+public class LedgerRepository(TigerBeetleClientProvider tbClientProvider) : ILedgerRepository
 {
     public const uint LedgerId = 1;
     public const ushort TransferCode = 1;
