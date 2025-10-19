@@ -59,8 +59,8 @@ public record LedgerTransfer(
             UserData128 = supplementaryAccountId,
             UserData64 = Reference,
             UserData32 = 0,
-            Ledger = LedgerRepository.LedgerId,
-            Code = LedgerRepository.TransferCode,
+            Ledger = ILedgerRepository.LedgerId,
+            Code = ILedgerRepository.TransferCode,
             PendingId = ParentId ?? 0,
             Flags = TransferType.ToTransferFlags() | linkedFlag,
         };

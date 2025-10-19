@@ -6,7 +6,7 @@ using RetailBank.Models.Options;
 
 namespace RetailBank.Services;
 
-public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOptions> options, ILogger<InterbankClient> logger)
+public class InterbankClient(HttpClient httpClient, IOptions<InterbankTransferOptions> options, ILogger<InterbankClient> logger) : IInterbankClient
 {
     private async Task<decimal?> TryGetExternalAccountBalance(string getAccountUrl, string createAccountUrl, string notifyUrl)
     {
