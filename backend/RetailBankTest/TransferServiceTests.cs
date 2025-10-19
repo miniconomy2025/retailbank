@@ -13,7 +13,6 @@ namespace RetailBankTest;
 public class TransferServiceTests
 {
     private readonly Mock<ILedgerRepository> _mockLedgerRepository;
-    private readonly Mock<InterbankClient> _mockInterbankClient;
     private readonly Mock<IOptions<TransferOptions>> _mockTransferOptions;
     private readonly Mock<IOptions<SimulationOptions>> _mockSimulationOptions;
     private readonly TransferService _transferService;
@@ -21,27 +20,6 @@ public class TransferServiceTests
     public TransferServiceTests()
     {
         _mockLedgerRepository = new Mock<ILedgerRepository>();
-        
-        // Create a mock InterbankClient
-        var mockHttpClient = new HttpClient();
-        var mockInterbankOptions = new Mock<IOptions<InterbankTransferOptions>>();
-        var mockLogger = new Mock<ILogger<InterbankClient>>();
-        
-        var interbankOptions = new InterbankTransferOptions
-        {
-            RetryCount = 3,
-            DelaySeconds = 1,
-            LoanAmountCents = 10_000_000__00,
-            Banks = new Dictionary<Bank, InterbankTransferBankDetails>()
-        };
-        mockInterbankOptions.Setup(o => o.Value).Returns(interbankOptions);
-        
-        _mockInterbankClient = new Mock<InterbankClient>(
-            mockHttpClient, 
-            mockInterbankOptions.Object, 
-            mockLogger.Object
-        );
-        
         _mockTransferOptions = new Mock<IOptions<TransferOptions>>();
         _mockSimulationOptions = new Mock<IOptions<SimulationOptions>>();
 
@@ -60,9 +38,24 @@ public class TransferServiceTests
         };
         _mockSimulationOptions.Setup(o => o.Value).Returns(simulationOptions);
 
+        // Create InterbankClient dependency (currently only tests internal transfers)
+        var httpClient = new HttpClient();
+        var interbankOptions = new Mock<IOptions<InterbankTransferOptions>>();
+        var logger = new Mock<ILogger<InterbankClient>>();
+        
+        interbankOptions.Setup(o => o.Value).Returns(new InterbankTransferOptions
+        {
+            RetryCount = 3,
+            DelaySeconds = 1,
+            LoanAmountCents = 10_000_000__00,
+            Banks = new Dictionary<Bank, InterbankTransferBankDetails>()
+        });
+
+        var interbankClient = new InterbankClient(httpClient, interbankOptions.Object, logger.Object);
+
         _transferService = new TransferService(
             _mockLedgerRepository.Object,
-            _mockInterbankClient.Object,
+            interbankClient,
             _mockTransferOptions.Object,
             _mockSimulationOptions.Object
         );
