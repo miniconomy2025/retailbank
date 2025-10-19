@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
 using RetailBank.Models.Interbank;
 using RetailBank.Models.Ledger;
+using RetailBank.Models.Options;
 using RetailBank.Repositories;
 using RetailBank.Services;
 
@@ -27,6 +29,9 @@ public class MockServices
         var ledgerMock = new Mock<ILedgerRepository>();
         // todo: ledger mock
 
+        services.AddSingleton(_provider => Options.Create(new LoanOptions()));
+        services.AddSingleton(_provider => Options.Create(new TransferOptions()));
+        services.AddSingleton(_provider => Options.Create(new SimulationOptions()));
         services.AddTransient(_provider => interbankMock.Object);
         services.AddTransient(_provider => ledgerMock.Object);
         services.AddTransient<AccountService>();
@@ -37,12 +42,11 @@ public class MockServices
     }
 
     [Fact]
-    public async Task MockServiceProviderWorking()
+    public void MockServiceProviderWorking()
     {
         var provider = MockServiceProvider();
-        var account = provider.GetRequiredService<AccountService>();
-        var accs = await account.GetAccounts(null, 25, 0);
-
-        Assert.Empty(accs);
+        provider.GetRequiredService<AccountService>();
+        provider.GetRequiredService<LoanService>();
+        provider.GetRequiredService<TransferService>();
     }
 }

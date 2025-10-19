@@ -4,6 +4,6 @@ public record TransferOptions
 {
     public const string Section = "Transfer";
 
-    public required decimal TransferFeePercent { get; init; }
-    public required decimal DepositFeePercent { get; init; }
+    public decimal TransferFeePercent { get; init; } = 2.0m;
+    public decimal DepositFeePercent { get; init; } = 0.25m;
 }
