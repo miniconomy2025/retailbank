@@ -4,6 +4,9 @@ namespace RetailBank.Repositories;
 
 public interface ILedgerRepository
 {
+    public const uint LedgerId = 1;
+    public const ushort TransferCode = 1;
+
     Task CreateAccount(LedgerAccount account);
     Task<IEnumerable<LedgerAccount>> GetAccounts(LedgerAccountType? code, UInt128? debitAccountId, uint limit, ulong cursorMax);
     Task<LedgerAccount?> GetAccount(UInt128 accountId);
@@ -15,4 +18,3 @@ public interface ILedgerRepository
     Task<(UInt128, UInt128)> BalanceAndCloseCredit(UInt128 debitAccountId, UInt128 creditAccountId);
     Task InitialiseInternalAccounts();
 }
-

@@ -7,9 +7,6 @@ namespace RetailBank.Repositories;
 
 public class LedgerRepository(TigerBeetleClientProvider tbClientProvider) : ILedgerRepository
 {
-    public const uint LedgerId = 1;
-    public const ushort TransferCode = 1;
-
     public async Task CreateAccount(LedgerAccount account)
     {
         var result = await tbClientProvider.Client.CreateAccountAsync(account.ToAccount());
@@ -116,7 +113,7 @@ public class LedgerRepository(TigerBeetleClientProvider tbClientProvider) : ILed
             DebitAccountId = debitAccountId,
             CreditAccountId = creditAccountId,
             Amount = UInt128.MaxValue,
-            Ledger = LedgerId,
+            Ledger = ILedgerRepository.LedgerId,
             Flags = TransferFlags.BalancingCredit | TransferFlags.Linked,
         };
 
@@ -129,7 +126,7 @@ public class LedgerRepository(TigerBeetleClientProvider tbClientProvider) : ILed
             DebitAccountId = debitAccountId,
             CreditAccountId = creditAccountId,
             Amount = 0,
-            Ledger = LedgerId,
+            Ledger = ILedgerRepository.LedgerId,
             Flags = TransferFlags.Pending | TransferFlags.ClosingCredit,
         };
 

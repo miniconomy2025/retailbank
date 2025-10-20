@@ -27,7 +27,7 @@ builder.Services.Configure<JsonOptions>(options =>
 
 builder.Services
     .AddMemoryCache()
-    .AddSingleton<LedgerRepository>()
+    .AddSingleton<ILedgerRepository, LedgerRepository>()
     .AddHostedService<SimulationRunner>()
     .AddServices()
     .AddValidators()

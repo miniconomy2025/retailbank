@@ -28,7 +28,7 @@ public static class SimulationEndpoints
         SimulationControllerService simulationController,
         ILedgerRepository ledgerRepository,
         StartSimulationRequest request,
-        InterbankClient interbankClient,
+        IInterbankClient interbankClient,
         IValidator<StartSimulationRequest> validator
     )
     {

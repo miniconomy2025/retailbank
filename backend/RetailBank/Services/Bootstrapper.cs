@@ -15,7 +15,7 @@ public static class Bootstrapper
         services.AddOptions<InterbankTransferOptions>().BindConfiguration(InterbankTransferOptions.Section);
         services.AddOptions<TransferOptions>().BindConfiguration(TransferOptions.Section);
 
-        services.AddHttpClient<InterbankClient>(client =>
+        services.AddHttpClient<IInterbankClient, InterbankClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "RetailBank/1.0");

@@ -42,7 +42,7 @@ public record LedgerAccount(
         {
             Id = Id,
             Code = (ushort)AccountType,
-            Ledger = LedgerRepository.LedgerId,
+            Ledger = ILedgerRepository.LedgerId,
             Timestamp = Cursor,
             UserData128 = DebitOrder?.DebitAccountId ?? 0,
             UserData64 = DebitOrder?.Amount ?? 0,
