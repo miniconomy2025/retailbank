@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vs
+tigerbeetle.exe
+tigerbeetle.zip
+0_0.tigerbeetle
