@@ -13,6 +13,9 @@ public class LoanService(ILedgerRepository ledgerRepository, IOptions<LoanOption
 {
     public async Task<UInt128> CreateLoanAccount(UInt128 debitAccountNumber, ulong loanAmount)
     {
+        if (loanAmount == 0)
+            throw new InvalidLoanAmountException(loanAmount);
+
         {
             var debitAccount = await ledgerRepository.GetAccount(debitAccountNumber) ?? throw new AccountNotFoundException(debitAccountNumber);
 
@@ -71,11 +74,18 @@ public class LoanService(ILedgerRepository ledgerRepository, IOptions<LoanOption
         ]);
     }
 
-    private static uint CalculateInstallment(ulong principal, decimal annualRatePercent, uint months)
+    private static ulong CalculateInstallment(ulong principal, decimal annualRatePercent, uint months)
     {
         var monthlyRate = annualRatePercent / 100.0m / 12.0m;
         var denominator = 1 - (1.0m + monthlyRate).Pow((int)-months);
-        return (uint)Math.Ceiling(principal * monthlyRate / denominator);
+        if (denominator == 0)
+        {
+            return (ulong)(principal / months);
+        }
+        else
+        {
+            return (ulong)Math.Ceiling(principal * monthlyRate / denominator);
+        }
     }
 
     // 13 digits starting with "1000"
