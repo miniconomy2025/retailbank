@@ -6,6 +6,7 @@ TB_BIN="$TB_DIR/tigerbeetle"
 TB_DATA="$TB_DIR/0_0.tigerbeetle"
 SERVICE_PATH="/etc/systemd/system/tigerbeetle.service"
 TB_PORT=4000
+TB_MEMORY=2GiB
 
 ACCOUNT_ID=1000
 LEDGER_ID=1
@@ -43,7 +44,7 @@ else
     [Service]
     Type=simple
     WorkingDirectory=$TB_DIR
-    ExecStart=$TB_DIR/tigerbeetle start --addresses=$TB_PORT ./0_0.tigerbeetle
+    ExecStart=$TB_DIR/tigerbeetle start --addresses=$TB_PORT --cache-grid=$TB_MEMORY ./0_0.tigerbeetle
     Restart=on-failure
     User=$USER_NAME
 
