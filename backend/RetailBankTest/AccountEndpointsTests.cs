@@ -211,6 +211,38 @@ public class AccountEndpointsTests
     }
 
     [Fact]
+    public async Task GetAccounts_NoAccounts_ReturnsEmptyPaginationWithNullNext()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Path = "/accounts";
+
+        _mockLedgerRepository
+            .Setup(r => r.GetAccounts(null, null, 25, 0))
+            .ReturnsAsync(new List<LedgerAccount>());
+
+        // Act
+        var result = await AccountEndpoints.GetAccounts(
+            httpContext,
+            _accountService,
+            null,
+            25,
+            0
+        );
+
+        // Assert
+        var okResult = Assert.IsType<Ok<CursorPagination<AccountDto>>>(result);
+        Assert.NotNull(okResult.Value);
+        Assert.Empty(okResult.Value.Items);
+        Assert.Null(okResult.Value.Next);
+
+        _mockLedgerRepository.Verify(
+            r => r.GetAccounts(null, null, 25, 0),
+            Times.Once
+        );
+    }
+
+    [Fact]
     public async Task GetAccount_ExistingAccount_ReturnsOkWithAccountDto()
     {
         // Arrange
@@ -318,6 +350,41 @@ public class AccountEndpointsTests
         Assert.NotNull(okResult.Value);
         Assert.Equal(2, okResult.Value.Items.Count());
         Assert.Equal($"/accounts/{accountId}/transfers?limit=25&cursorMax=98", okResult.Value.Next);
+
+        _mockLedgerRepository.Verify(
+            r => r.GetAccountTransfers(new UInt128(0, accountId), 25, 0, null, null),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task GetAccountTransfers_NoTransfers_ReturnsEmptyPaginationWithNullNext()
+    {
+        // Arrange
+        ulong accountId = 1000_0000_0001;
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Path = $"/accounts/{accountId}/transfers";
+
+        _mockLedgerRepository
+            .Setup(r => r.GetAccountTransfers(new UInt128(0, accountId), 25, 0, null, null))
+            .ReturnsAsync(new List<LedgerTransfer>());
+
+        // Act
+        var result = await AccountEndpoints.GetAccountTransfers(
+            accountId,
+            httpContext,
+            _accountService,
+            25,
+            0,
+            null,
+            null
+        );
+
+        // Assert
+        var okResult = Assert.IsType<Ok<CursorPagination<TransferDto>>>(result);
+        Assert.NotNull(okResult.Value);
+        Assert.Empty(okResult.Value.Items);
+        Assert.Null(okResult.Value.Next);
 
         _mockLedgerRepository.Verify(
             r => r.GetAccountTransfers(new UInt128(0, accountId), 25, 0, null, null),
