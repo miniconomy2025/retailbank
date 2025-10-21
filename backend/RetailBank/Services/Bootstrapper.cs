@@ -27,7 +27,7 @@ public static class Bootstrapper
             .AddSingleton<ILedgerRepository, LedgerRepository>()
             .AddSingleton<IdempotencyCache>()
             .AddSingleton<AccountService>()
-            .AddSingleton<LoanService>()
+            .AddSingleton<ILoanService, LoanService>()
             .AddSingleton<TransferService>()
             .AddSingleton<SimulationControllerService>();
     }
