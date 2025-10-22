@@ -1,4 +1,4 @@
-name: Deploy API
+name: Test and Deploy API
 
 on:
   workflow_dispatch:
