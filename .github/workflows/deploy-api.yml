@@ -9,7 +9,40 @@ on:
       - ".github/workflows/deploy-api.yml"
 
 jobs:
+  test: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install and start TigerBeetle
+        run: |
+          curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip tigerbeetle.zip
+          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 --development ./0_0.tigerbeetle
+          ./tigerbeetle start --addresses=4000 --development ./0_0.tigerbeetle
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        working-directory: backend/RetailBankTest
+        run: dotnet restore
+
+      - name: Run unit and integration tests
+        working-directory: backend/RetailBankTest
+        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
+
+      - name: Upload test results (optional but nice)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: backend/RetailBank/TestResults
+      
   deploy:
+    needs: [test]
     runs-on: ubuntu-latest
 
     steps:
