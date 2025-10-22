@@ -18,8 +18,8 @@ jobs:
       - name: Install and start TigerBeetle
         run: |
           curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip tigerbeetle.zip
-          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 --development --cache-grid=64MB ./0_0.tigerbeetle
-          ./tigerbeetle start --addresses=4000 --development --cache-grid=64MB ./0_0.tigerbeetle &
+          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 --development ./0_0.tigerbeetle
+          ./tigerbeetle start --addresses=4000 --development  ./0_0.tigerbeetle &
           
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
