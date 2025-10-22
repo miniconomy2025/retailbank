@@ -2,6 +2,15 @@ name: Deploy API
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_prod:
+        description: "Deploy to production?"
+        required: true
+        default: "no"
+        type: choice
+        options:
+          - "no"
+          - "yes"
   push:
     branches: [main]
     paths:
@@ -32,7 +41,7 @@ jobs:
 
       - name: Run unit and integration tests
         working-directory: backend/RetailBankTest
-        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
+        run: dotnet test --configuration Release --logger "trx;LogFileName=test_results.trx"
 
       - name: Upload test results (optional but nice)
         if: always()
@@ -46,6 +55,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check deployment choice
+        run: |
+          if [ "${{ github.event.inputs.deploy_prod }}" != "yes" ]; then
+            echo "Skipping production deployment."
+            exit 0
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
