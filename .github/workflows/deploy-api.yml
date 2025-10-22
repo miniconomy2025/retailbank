@@ -1,7 +1,16 @@
-name: Deploy API
+name: Test and Deploy API
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_prod:
+        description: "Deploy to production?"
+        required: true
+        default: "no"
+        type: choice
+        options:
+          - "no"
+          - "yes"
   push:
     branches: [main]
     paths:
@@ -9,7 +18,41 @@ on:
       - ".github/workflows/deploy-api.yml"
 
 jobs:
+  test: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install and start TigerBeetle
+        run: |
+          curl -Lo tigerbeetle.zip https://linux.tigerbeetle.com && unzip tigerbeetle.zip
+          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 --development ./0_0.tigerbeetle
+          ./tigerbeetle start --addresses=4000 --development  ./0_0.tigerbeetle &
+          
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        working-directory: backend/RetailBankTest
+        run: dotnet restore
+
+      - name: Run unit and integration tests
+        working-directory: backend/RetailBankTest
+        run: dotnet test --configuration Release --logger "trx;LogFileName=test_results.trx"
+
+      - name: Upload test results 
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: backend/RetailBankTest/TestResults
+      
   deploy:
+    needs: [test]
+    if: ${{ github.event.inputs.deploy_prod == 'yes' }}
     runs-on: ubuntu-latest
 
     steps:

@@ -10,12 +10,6 @@ namespace RetailBankTest;
 
 public class LoanServiceTests
 {
-    private readonly IServiceProvider mockServices;
-
-    public LoanServiceTests()
-    {
-        this.mockServices = new MockServices().MockServiceProvider();
-    }
 
     private Mock<ILedgerRepository> GetLedgerRepositoryMock(LedgerAccount? debitAccount = null)
     {
