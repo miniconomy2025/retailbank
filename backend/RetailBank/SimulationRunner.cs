@@ -9,7 +9,7 @@ namespace RetailBank;
 
 public class SimulationRunner(
     ILogger<SimulationRunner> logger,
-    LoanService loanService,
+    ILoanService loanService,
     TransferService transferService,
     AccountService accountService,
     SimulationControllerService simulationController
