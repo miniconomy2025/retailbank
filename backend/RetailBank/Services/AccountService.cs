@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using RetailBank.Models.Ledger;
 using RetailBank.Repositories;
+using TigerBeetle;
 
 namespace RetailBank.Services;
 
@@ -13,6 +14,7 @@ public class AccountService(ILedgerRepository ledgerRepository)
         var id = GenerateTransactionalAccountNumber();
 
         await ledgerRepository.CreateAccount(new LedgerAccount(id, LedgerAccountType.Transactional, new DebitOrder((ulong)Bank.Retail, salary)));
+        await ledgerRepository.Transfer(new LedgerTransfer(ID.Create(), (ushort)Bank.Retail, id, salary, 0, TransferType.Transfer));
 
         return id;
     }
