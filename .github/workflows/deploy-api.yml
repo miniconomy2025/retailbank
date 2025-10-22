@@ -43,25 +43,19 @@ jobs:
         working-directory: backend/RetailBankTest
         run: dotnet test --configuration Release --logger "trx;LogFileName=test_results.trx"
 
-      - name: Upload test results (optional but nice)
+      - name: Upload test results 
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: backend/RetailBank/TestResults
+          path: backend/RetailBankTest/TestResults
       
   deploy:
     needs: [test]
+    if: ${{ github.event.inputs.deploy_prod == 'yes' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check deployment choice
-        run: |
-          if [ "${{ github.event.inputs.deploy_prod }}" != "yes" ]; then
-            echo "Skipping production deployment."
-            exit 0
-          fi
-
       - name: Checkout code
         uses: actions/checkout@v4
 
