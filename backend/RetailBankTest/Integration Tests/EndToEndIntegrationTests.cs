@@ -73,9 +73,10 @@ public class EndToEndScenarioTests : IClassFixture<IntegrationTestFixture>
         var accountAfterLoan = await _accountService.GetAccount(customerAccountId);
         Assert.NotNull(accountAfterLoan);
         Assert.True(accountAfterLoan.BalancePosted < accountAfterSalary.BalancePosted);
-        
+
         // Make transfer
-        var receiverAccountId = await _accountService.CreateTransactionalAccount(4000_00ul);
+        var receiverSalary = 4000_00ul;
+        var receiverAccountId = await _accountService.CreateTransactionalAccount(receiverSalary);
         var transferAmount = 2000_00ul;
         var transferId = await _transferService.Transfer(
             customerAccountId,
@@ -88,7 +89,7 @@ public class EndToEndScenarioTests : IClassFixture<IntegrationTestFixture>
         // verify if the receiver actually received the money?
         var receiverAccount = await _accountService.GetAccount(receiverAccountId);
         Assert.NotNull(receiverAccount);
-        Assert.Equal((Int128)transferAmount, -receiverAccount.BalancePosted);
+        Assert.Equal((Int128)(transferAmount + receiverSalary), -receiverAccount.BalancePosted);
         
         // pay loan installment
         var loanBefore = await _accountService.GetAccount(loanAccountId);

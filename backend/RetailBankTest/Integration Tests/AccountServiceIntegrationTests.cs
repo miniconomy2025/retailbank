@@ -51,6 +51,6 @@ public class AccountServiceIntegrationTests : IClassFixture<IntegrationTestFixtu
         
         var transfers = await _accountService.GetAccountTransfers(accountId, 100, 0, null, null);
         
-        Assert.Empty(transfers);
+        Assert.Collection(transfers, [(transfer) => Assert.Equal(3000_00ul, transfer.Amount)]);
     }
 }

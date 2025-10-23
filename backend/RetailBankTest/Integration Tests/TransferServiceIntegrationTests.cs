@@ -66,14 +66,14 @@ public class TransferServiceIntegrationTests : IClassFixture<IntegrationTestFixt
         Assert.NotNull(payerAfter);
         Assert.NotNull(payeeAfter);
         
-        var expectedReduction = transferAmount + (UInt128)((decimal)transferAmount * 1.0m / 100.0m);
+        var expectedReduction = transferAmount + (UInt128)(transferAmount * 1.0m / 100.0m);
         Assert.Equal(
             -payerBefore!.BalancePosted - (Int128)expectedReduction,
             -payerAfter.BalancePosted
         );
         
         Assert.Equal(
-            payeeBefore!.BalancePosted + (Int128)transferAmount,
+            -payeeBefore!.BalancePosted + (Int128)transferAmount,
             -payeeAfter.BalancePosted
         );
         
