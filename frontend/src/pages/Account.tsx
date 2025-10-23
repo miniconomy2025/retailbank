@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TransferTable from "@/components/TransferTable";
 import { AccountTable } from "@/components/AccountTable";
 import { BanknoteArrowDown, BanknoteArrowUp, BanknoteIcon } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 export default function Account() {
   const { accountId: accountIdString } = useParams();
@@ -71,22 +72,34 @@ export default function Account() {
 
   const transfers = data?.pages.flatMap((page) => page.items) ?? [];
 
+  const accountName = accountId in AccountNames
+    ? AccountNames[accountId as keyof typeof AccountNames]
+    : '';
+
   return (
     <PageWrapper
       loading={isAccountLoading || isTransfersLoading || isLoanAccountsLoading}
       error={accountError || transfersError || loanAccountsError}
     >
       <div className="h-full flex flex-col gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-left">{account?.accountType} Account</h1>
-          {
-            accountId in AccountNames
-            ? <p className="text-left">
-              {AccountNames[accountId as keyof typeof AccountNames]}
-              <span className="ml-2 font-mono">{accountId}</span>
-            </p>
-            : <p className="text-left font-mono">{accountId}</p>
-          }
+        <div className="flex">
+          <div className="flex-1">
+            <h1 className="text-3xl font-thin text-left">
+              <span className="font-mono">{accountId}</span> {accountName && <span className="text-2xl">{accountName}</span>}
+            </h1>
+            <h2 className="text-xl font-thin text-left text-gray-500">
+              {account?.accountType} Account
+            </h2>
+          </div>
+          <div className="text-right">
+            {
+              account?.createdAt &&
+              <>
+                <p>Created At</p>
+                <p className="text-gray-500 text-sm">{formatDate(new Date(account.createdAt))}</p>
+              </>
+            }
+          </div>
         </div>
 
         <div className="flex gap-4 flex-col lg:flex-row align-center">

@@ -4,7 +4,7 @@ export interface Account {
   pending: Balance;
   posted: Balance;
   closed: boolean;
-  createdAt: number;
+  createdAt: string;
 }
 
 export interface Balance {

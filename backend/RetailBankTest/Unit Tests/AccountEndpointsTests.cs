@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using RetailBank.Endpoints;
 using RetailBank.Models.Dtos;
 using RetailBank.Models.Ledger;
+using RetailBank.Models.Options;
 using RetailBank.Repositories;
 using RetailBank.Services;
 
@@ -14,12 +16,14 @@ public class AccountEndpointsTests
 {
     private readonly Mock<ILedgerRepository> _mockLedgerRepository;
     private readonly AccountService _accountService;
+    private readonly SimulationControllerService _simulationService;
     private readonly Mock<ILogger<AccountService>> _mockLogger;
 
     public AccountEndpointsTests()
     {
         _mockLedgerRepository = new Mock<ILedgerRepository>();
         _accountService = new AccountService(_mockLedgerRepository.Object);
+        _simulationService = new SimulationControllerService(Options.Create(new SimulationOptions()));
         _mockLogger = new Mock<ILogger<AccountService>>();
     }
 
@@ -93,6 +97,7 @@ public class AccountEndpointsTests
         var result = await AccountEndpoints.GetAccounts(
             httpContext,
             _accountService,
+            _simulationService,
             LedgerAccountType.Transactional,
             25,
             0
@@ -151,6 +156,7 @@ public class AccountEndpointsTests
         var result = await AccountEndpoints.GetAccounts(
             httpContext,
             _accountService,
+            _simulationService,
             null,
             25,
             0
@@ -193,6 +199,7 @@ public class AccountEndpointsTests
         var result = await AccountEndpoints.GetAccounts(
             httpContext,
             _accountService,
+            _simulationService,
             null,
             1,
             0
@@ -225,6 +232,7 @@ public class AccountEndpointsTests
         var result = await AccountEndpoints.GetAccounts(
             httpContext,
             _accountService,
+            _simulationService,
             null,
             25,
             0
@@ -264,7 +272,7 @@ public class AccountEndpointsTests
             .ReturnsAsync(expectedAccount);
 
         // Act
-        var result = await AccountEndpoints.GetAccount(accountId, _accountService, _mockLogger.Object);
+        var result = await AccountEndpoints.GetAccount(accountId, _accountService, _simulationService, _mockLogger.Object);
 
         // Assert
         var okResult = Assert.IsType<Ok<AccountDto>>(result);
@@ -289,7 +297,7 @@ public class AccountEndpointsTests
             .ReturnsAsync((LedgerAccount?)null);
 
         // Act
-        var result = await AccountEndpoints.GetAccount(accountId, _accountService, _mockLogger.Object);
+        var result = await AccountEndpoints.GetAccount(accountId, _accountService, _simulationService, _mockLogger.Object);
 
         // Assert
         Assert.IsType<NotFound>(result);
@@ -339,6 +347,7 @@ public class AccountEndpointsTests
             accountId,
             httpContext,
             _accountService,
+            _simulationService,
             25,
             0,
             null,
@@ -374,6 +383,7 @@ public class AccountEndpointsTests
             accountId,
             httpContext,
             _accountService,
+            _simulationService,
             25,
             0,
             null,
@@ -433,7 +443,8 @@ public class AccountEndpointsTests
         var result = await AccountEndpoints.GetAccountLoans(
             accountId,
             httpContext,
-            _accountService
+            _accountService,
+            _simulationService
         );
 
         // Assert
@@ -464,7 +475,8 @@ public class AccountEndpointsTests
         var result = await AccountEndpoints.GetAccountLoans(
             accountId,
             httpContext,
-            _accountService
+            _accountService,
+            _simulationService
         );
 
         // Assert

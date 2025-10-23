@@ -110,6 +110,7 @@ public static class TransferEndpoints
     public static async Task<IResult> GetTransfers(
         HttpContext httpContext,
         TransferService transferService,
+        SimulationControllerService simulationService,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong cursorMax = 0,
         [FromQuery] ulong? reference = null
@@ -124,14 +125,15 @@ public static class TransferEndpoints
             nextUri = $"{httpContext.Request.Path}?limit={limit}&cursorMax={newMax}";
         }
 
-        var pagination = new CursorPagination<TransferDto>(transfers.Select(transfer => new TransferDto(transfer)), nextUri);
+        var pagination = new CursorPagination<TransferDto>(transfers.Select(transfer => new TransferDto(transfer, simulationService)), nextUri);
 
         return Results.Ok(pagination);
     }
 
     public static async Task<IResult> GetTransfer(
         string id,
-        TransferService transferService
+        TransferService transferService,
+        SimulationControllerService simulationService
     )
     {
         var transferId = UInt128.Parse(id, NumberStyles.HexNumber);
@@ -140,6 +142,6 @@ public static class TransferEndpoints
         if (transfer == null)
             return Results.NotFound();
         
-        return Results.Ok(new TransferDto(transfer));
+        return Results.Ok(new TransferDto(transfer, simulationService));
     }
 }

@@ -6,6 +6,7 @@ export interface Transfer {
   parentId?: string;
   transferType: TransferType;
   reference: number;
+  timestamp: string;
 }
 
 export type TransferType =

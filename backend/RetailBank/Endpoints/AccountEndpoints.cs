@@ -98,6 +98,7 @@ public static class AccountEndpoints
     public static async Task<IResult> GetAccounts(
         HttpContext httpContext,
         AccountService accountService,
+        SimulationControllerService simulationService,
         [FromQuery] LedgerAccountType? accountType = null,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong cursorMax = 0
@@ -112,7 +113,7 @@ public static class AccountEndpoints
             nextUri = $"{httpContext.Request.Path}?limit={limit}&cursorMax={newMax}";
         }
 
-        var pagination = new CursorPagination<AccountDto>(accounts.Select(account => new AccountDto(account)), nextUri);
+        var pagination = new CursorPagination<AccountDto>(accounts.Select(account => new AccountDto(account, simulationService)), nextUri);
 
         return Results.Ok(pagination);
     }
@@ -120,6 +121,7 @@ public static class AccountEndpoints
     public static async Task<IResult> GetAccount(
         ulong id,
         AccountService accountService,
+        SimulationControllerService simulationService,
         ILogger<AccountService> logger
     )
     {
@@ -128,13 +130,14 @@ public static class AccountEndpoints
         if (account == null)
             return Results.NotFound();
 
-        return Results.Ok(new AccountDto(account));
+        return Results.Ok(new AccountDto(account, simulationService));
     }
 
     public static async Task<IResult> GetAccountTransfers(
         ulong id,
         HttpContext httpContext,
         AccountService accountService,
+        SimulationControllerService simulationService,
         [FromQuery] uint limit = 25,
         [FromQuery] ulong cursorMax = 0,
         [FromQuery] ulong? reference = null,
@@ -150,7 +153,7 @@ public static class AccountEndpoints
             nextUri = $"{httpContext.Request.Path}?limit={limit}&cursorMax={newMax}";
         }
 
-        var pagination = new CursorPagination<TransferDto>(transfers.Select(transfer => new TransferDto(transfer)), nextUri);
+        var pagination = new CursorPagination<TransferDto>(transfers.Select(transfer => new TransferDto(transfer, simulationService)), nextUri);
 
         return Results.Ok(pagination);
     }
@@ -158,11 +161,12 @@ public static class AccountEndpoints
     public static async Task<IResult> GetAccountLoans(
         ulong id,
         HttpContext httpContext,
-        AccountService accountService
+        AccountService accountService,
+        SimulationControllerService simulationService
     )
     {
         var accounts = (await accountService.GetAccountLoans(id))
-            .Select(account => new AccountDto(account));
+            .Select(account => new AccountDto(account, simulationService));
 
         return Results.Ok(accounts);
     }

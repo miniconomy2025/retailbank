@@ -14,6 +14,6 @@ public record Report(
     [property: Required]
     UInt128 RecentVolume,
     [property: Required]
-    [property: RegularExpression("^\\d+\\/\\d+\\/\\d+\\ \\d+:\\d+:\\d+$")]
+    [property: RegularExpression("^\\d{4}\\/\\d{2}\\/\\d{2}\\ \\d{2}:\\d{2}:\\d{2}$")]
     string Timestamp
 );

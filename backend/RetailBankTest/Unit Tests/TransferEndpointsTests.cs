@@ -227,11 +227,13 @@ public class TransferEndpointsTests
             .ReturnsAsync(transfers);
 
         var transferService = CreateTransferService(ledgerRepository);
+        var simulationService = new SimulationControllerService(Options.Create(new SimulationOptions()));
 
         // Act
         var result = await TransferEndpoints.GetTransfers(
             httpContext,
             transferService,
+            simulationService,
             limit,
             cursorMax,
             reference
@@ -259,11 +261,13 @@ public class TransferEndpointsTests
             .ReturnsAsync(Enumerable.Empty<LedgerTransfer>());
 
         var transferService = CreateTransferService(ledgerRepository);
+        var simulationService = new SimulationControllerService(Options.Create(new SimulationOptions()));
 
         // Act
         var result = await TransferEndpoints.GetTransfers(
             httpContext,
             transferService,
+            simulationService,
             limit: 25,
             cursorMax: 0,
             reference: null
@@ -297,11 +301,13 @@ public class TransferEndpointsTests
             .ReturnsAsync(ledgerTransfer);
 
         var transferService = CreateTransferService(ledgerRepository);
+        var simulationService = new SimulationControllerService(Options.Create(new SimulationOptions()));
 
         // Act
         var result = await TransferEndpoints.GetTransfer(
             transferId.ToString("X"),
-            transferService
+            transferService,
+            simulationService
         );
 
         // Assert
@@ -320,11 +326,13 @@ public class TransferEndpointsTests
             .ReturnsAsync((LedgerTransfer?)null);
 
         var transferService = CreateTransferService(ledgerRepository);
+        var simulationService = new SimulationControllerService(Options.Create(new SimulationOptions()));
 
         // Act
         var result = await TransferEndpoints.GetTransfer(
             transferId.ToString("X"),
-            transferService
+            transferService,
+            simulationService
         );
 
         // Assert
