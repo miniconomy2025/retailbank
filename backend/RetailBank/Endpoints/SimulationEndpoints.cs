@@ -36,7 +36,7 @@ public static class SimulationEndpoints
 
         await ledgerRepository.InitialiseInternalAccounts();
 
-        simulationController.Start(request.EpochStartTime * 1000);
+        simulationController.Start(request.EpochStartTime);
 
         return Results.NoContent();
     }
