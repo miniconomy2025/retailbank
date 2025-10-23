@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using RetailBank.Exceptions;
@@ -15,6 +14,7 @@ public class TransferServiceTests
     private readonly Mock<ILedgerRepository> _mockLedgerRepository;
     private readonly Mock<IOptions<TransferOptions>> _mockTransferOptions;
     private readonly Mock<IOptions<SimulationOptions>> _mockSimulationOptions;
+    private readonly Mock<IInterbankClient> _mockInterbankClient;
     private readonly TransferService _transferService;
 
     public TransferServiceTests()
@@ -22,6 +22,7 @@ public class TransferServiceTests
         _mockLedgerRepository = new Mock<ILedgerRepository>();
         _mockTransferOptions = new Mock<IOptions<TransferOptions>>();
         _mockSimulationOptions = new Mock<IOptions<SimulationOptions>>();
+        _mockInterbankClient = new Mock<IInterbankClient>();
 
         // Setup default options
         var transferOptions = new TransferOptions
@@ -38,24 +39,9 @@ public class TransferServiceTests
         };
         _mockSimulationOptions.Setup(o => o.Value).Returns(simulationOptions);
 
-        // Create InterbankClient dependency (currently only tests internal transfers)
-        var httpClient = new HttpClient();
-        var interbankOptions = new Mock<IOptions<InterbankTransferOptions>>();
-        var logger = new Mock<ILogger<InterbankClient>>();
-        
-        interbankOptions.Setup(o => o.Value).Returns(new InterbankTransferOptions
-        {
-            RetryCount = 3,
-            DelaySeconds = 1,
-            LoanAmountCents = 10_000_000__00,
-            Banks = new Dictionary<Bank, InterbankTransferBankDetails>()
-        });
-
-        var interbankClient = new InterbankClient(httpClient, interbankOptions.Object, logger.Object);
-
         _transferService = new TransferService(
             _mockLedgerRepository.Object,
-            interbankClient,
+            _mockInterbankClient.Object,
             _mockTransferOptions.Object,
             _mockSimulationOptions.Object
         );
@@ -319,6 +305,288 @@ public class TransferServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidDataException>(
             () => _transferService.Transfer(payerAccountId, payeeAccountId, amount, reference)
+        );
+    }
+
+    [Fact]
+    public async Task Transfer_CommercialTransferSucceeded_CompletesPendingTransfers()
+    {
+        // Arrange
+        var payerAccountId = new UInt128(0, 100010001);
+        var externalAccountId = new UInt128(0, 200020002);
+        var amount = new UInt128(0, 10000);
+        const ulong reference = 98765;
+
+        var payerAccount = new LedgerAccount(
+            Id: payerAccountId,
+            AccountType: LedgerAccountType.Transactional,
+            DebitOrder: null,
+            Closed: false,
+            DebitsPending: 0,
+            DebitsPosted: 50000,
+            CreditsPending: 0,
+            CreditsPosted: 30000,
+            Cursor: 0
+        );
+
+        var pendingTransferIds = new List<UInt128> { new(0, 10), new(0, 11) };
+        var completionTransferIds = new List<UInt128> { new(0, 20), new(0, 21) };
+        var recordedTransfers = new List<List<LedgerTransfer>>();
+        var sequence = new MockSequence();
+
+        _mockLedgerRepository
+            .Setup(r => r.GetAccount(payerAccountId))
+            .ReturnsAsync(payerAccount);
+
+        _mockLedgerRepository
+            .InSequence(sequence)
+            .Setup(r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()))
+            .Callback<IEnumerable<LedgerTransfer>>(transfers => recordedTransfers.Add(transfers.ToList()))
+            .ReturnsAsync(pendingTransferIds);
+
+        _mockLedgerRepository
+            .InSequence(sequence)
+            .Setup(r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()))
+            .Callback<IEnumerable<LedgerTransfer>>(transfers => recordedTransfers.Add(transfers.ToList()))
+            .ReturnsAsync(completionTransferIds);
+
+        _mockInterbankClient
+            .Setup(c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference))
+            .ReturnsAsync(NotificationResult.Succeeded);
+
+        // Act
+        var result = await _transferService.Transfer(payerAccountId, externalAccountId, amount, reference);
+
+        // Assert
+        Assert.Equal(completionTransferIds[0], result);
+        Assert.Equal(2, recordedTransfers.Count);
+
+        var pendingTransfers = recordedTransfers[0];
+        Assert.All(pendingTransfers, transfer => Assert.Equal(TransferType.StartTransfer, transfer.TransferType));
+
+        var outgoingTransfer = pendingTransfers.Single(transfer => transfer.CreditAccountId == externalAccountId);
+        Assert.Equal(payerAccountId, outgoingTransfer.DebitAccountId);
+        Assert.Equal(amount, outgoingTransfer.Amount);
+        Assert.Equal(reference, outgoingTransfer.Reference);
+
+        var feeTransfer = pendingTransfers.Single(transfer => transfer.CreditAccountId == (ulong)LedgerAccountId.FeeIncome);
+        Assert.Equal(payerAccountId, feeTransfer.DebitAccountId);
+        Assert.Equal(new UInt128(0, 250), feeTransfer.Amount);
+        Assert.Equal(0ul, feeTransfer.Reference);
+
+        var completionTransfers = recordedTransfers[1];
+        Assert.All(completionTransfers, transfer => Assert.Equal(TransferType.CompleteTransfer, transfer.TransferType));
+        Assert.True(completionTransfers.All(transfer => transfer.ParentId.HasValue));
+
+        for (var i = 0; i < completionTransfers.Count; i++)
+        {
+            Assert.Equal(pendingTransfers[i].Id, completionTransfers[i].ParentId);
+        }
+
+        _mockInterbankClient.Verify(
+            c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Transfer_CommercialTransferRejected_CancelsPendingTransfersAndThrows()
+    {
+        // Arrange
+        var payerAccountId = new UInt128(0, 100010001);
+        var externalAccountId = new UInt128(0, 200020002);
+        var amount = new UInt128(0, 10000);
+        const ulong reference = 98765;
+
+        var payerAccount = new LedgerAccount(
+            Id: payerAccountId,
+            AccountType: LedgerAccountType.Transactional,
+            DebitOrder: null,
+            Closed: false,
+            DebitsPending: 0,
+            DebitsPosted: 50000,
+            CreditsPending: 0,
+            CreditsPosted: 30000,
+            Cursor: 0
+        );
+
+        var pendingTransferIds = new List<UInt128> { new(0, 30), new(0, 31) };
+        var cancellationTransferIds = new List<UInt128> { new(0, 40), new(0, 41) };
+        var recordedTransfers = new List<List<LedgerTransfer>>();
+        var sequence = new MockSequence();
+
+        _mockLedgerRepository
+            .Setup(r => r.GetAccount(payerAccountId))
+            .ReturnsAsync(payerAccount);
+
+        _mockLedgerRepository
+            .InSequence(sequence)
+            .Setup(r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()))
+            .Callback<IEnumerable<LedgerTransfer>>(transfers => recordedTransfers.Add(transfers.ToList()))
+            .ReturnsAsync(pendingTransferIds);
+
+        _mockLedgerRepository
+            .InSequence(sequence)
+            .Setup(r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()))
+            .Callback<IEnumerable<LedgerTransfer>>(transfers => recordedTransfers.Add(transfers.ToList()))
+            .ReturnsAsync(cancellationTransferIds);
+
+        _mockInterbankClient
+            .Setup(c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference))
+            .ReturnsAsync(NotificationResult.Rejected);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ExternalTransferFailedException>(
+            () => _transferService.Transfer(payerAccountId, externalAccountId, amount, reference)
+        );
+
+        Assert.Equal(2, recordedTransfers.Count);
+
+        var pendingTransfers = recordedTransfers[0];
+        var cancellationTransfers = recordedTransfers[1];
+
+        Assert.All(pendingTransfers, transfer => Assert.Equal(TransferType.StartTransfer, transfer.TransferType));
+        Assert.All(cancellationTransfers, transfer => Assert.Equal(TransferType.CancelTransfer, transfer.TransferType));
+        Assert.True(cancellationTransfers.All(transfer => transfer.ParentId.HasValue));
+
+        for (var i = 0; i < cancellationTransfers.Count; i++)
+        {
+            Assert.Equal(pendingTransfers[i].Id, cancellationTransfers[i].ParentId);
+        }
+
+        _mockInterbankClient.Verify(
+            c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Transfer_CommercialTransferAccountNotFound_CancelsPendingTransfersAndThrows()
+    {
+        // Arrange
+        var payerAccountId = new UInt128(0, 100010001);
+        var externalAccountId = new UInt128(0, 200020002);
+        var amount = new UInt128(0, 10000);
+        const ulong reference = 98765;
+
+        var payerAccount = new LedgerAccount(
+            Id: payerAccountId,
+            AccountType: LedgerAccountType.Transactional,
+            DebitOrder: null,
+            Closed: false,
+            DebitsPending: 0,
+            DebitsPosted: 50000,
+            CreditsPending: 0,
+            CreditsPosted: 30000,
+            Cursor: 0
+        );
+
+        var pendingTransferIds = new List<UInt128> { new(0, 50), new(0, 51) };
+        var cancellationTransferIds = new List<UInt128> { new(0, 60), new(0, 61) };
+        var recordedTransfers = new List<List<LedgerTransfer>>();
+        var sequence = new MockSequence();
+
+        _mockLedgerRepository
+            .Setup(r => r.GetAccount(payerAccountId))
+            .ReturnsAsync(payerAccount);
+
+        _mockLedgerRepository
+            .InSequence(sequence)
+            .Setup(r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()))
+            .Callback<IEnumerable<LedgerTransfer>>(transfers => recordedTransfers.Add(transfers.ToList()))
+            .ReturnsAsync(pendingTransferIds);
+
+        _mockLedgerRepository
+            .InSequence(sequence)
+            .Setup(r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()))
+            .Callback<IEnumerable<LedgerTransfer>>(transfers => recordedTransfers.Add(transfers.ToList()))
+            .ReturnsAsync(cancellationTransferIds);
+
+        _mockInterbankClient
+            .Setup(c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference))
+            .ReturnsAsync(NotificationResult.AccountNotFound);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<AccountNotFoundException>(
+            () => _transferService.Transfer(payerAccountId, externalAccountId, amount, reference)
+        );
+
+        // Assert
+        Assert.Contains(externalAccountId.ToString(), exception.Message);
+        Assert.Equal(2, recordedTransfers.Count);
+
+        var pendingTransfers = recordedTransfers[0];
+        var cancellationTransfers = recordedTransfers[1];
+
+        Assert.All(pendingTransfers, transfer => Assert.Equal(TransferType.StartTransfer, transfer.TransferType));
+        Assert.All(cancellationTransfers, transfer => Assert.Equal(TransferType.CancelTransfer, transfer.TransferType));
+        Assert.True(cancellationTransfers.All(transfer => transfer.ParentId.HasValue));
+
+        for (var i = 0; i < cancellationTransfers.Count; i++)
+        {
+            Assert.Equal(pendingTransfers[i].Id, cancellationTransfers[i].ParentId);
+        }
+
+        _mockInterbankClient.Verify(
+            c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Transfer_CommercialTransferUnknownFailure_LeavesPendingTransfersAndThrows()
+    {
+        // Arrange
+        var payerAccountId = new UInt128(0, 100010001);
+        var externalAccountId = new UInt128(0, 200020002);
+        var amount = new UInt128(0, 10000);
+        const ulong reference = 98765;
+
+        var payerAccount = new LedgerAccount(
+            Id: payerAccountId,
+            AccountType: LedgerAccountType.Transactional,
+            DebitOrder: null,
+            Closed: false,
+            DebitsPending: 0,
+            DebitsPosted: 50000,
+            CreditsPending: 0,
+            CreditsPosted: 30000,
+            Cursor: 0
+        );
+
+        var pendingTransferIds = new List<UInt128> { new(0, 70), new(0, 71) };
+        var recordedTransfers = new List<List<LedgerTransfer>>();
+
+        _mockLedgerRepository
+            .Setup(r => r.GetAccount(payerAccountId))
+            .ReturnsAsync(payerAccount);
+
+        _mockLedgerRepository
+            .Setup(r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()))
+            .Callback<IEnumerable<LedgerTransfer>>(transfers => recordedTransfers.Add(transfers.ToList()))
+            .ReturnsAsync(pendingTransferIds);
+
+        _mockInterbankClient
+            .Setup(c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference))
+            .ReturnsAsync(NotificationResult.UnknownFailure);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ExternalTransferFailedException>(
+            () => _transferService.Transfer(payerAccountId, externalAccountId, amount, reference)
+        );
+
+        Assert.Single(recordedTransfers);
+        var pendingTransfers = recordedTransfers[0];
+        Assert.All(pendingTransfers, transfer => Assert.Equal(TransferType.StartTransfer, transfer.TransferType));
+
+        _mockInterbankClient.Verify(
+            c => c.TryExternalTransfer(Bank.Commercial, payerAccountId, externalAccountId, amount, reference),
+            Times.Once
+        );
+
+        _mockLedgerRepository.Verify(
+            r => r.TransferLinked(It.IsAny<IEnumerable<LedgerTransfer>>()),
+            Times.Once
         );
     }
 
