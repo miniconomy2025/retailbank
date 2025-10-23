@@ -95,8 +95,8 @@ export default function Account() {
             {
               account?.createdAt &&
               <>
-                <p className="text-gray-500 text-sm">Created At</p>
-                <p>{formatDate(new Date(account.createdAt))}</p>
+                <p>Created At</p>
+                <p className="text-gray-500 text-sm">{formatDate(new Date(account.createdAt))}</p>
               </>
             }
           </div>
