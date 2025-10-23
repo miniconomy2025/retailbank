@@ -9,7 +9,7 @@ export function AccountTable({ accounts, summary = false }: { accounts: Account[
         <Table className="accounts-table">
             <TableHeader>
                 <TableRow>
-                    <TableHead>ID</TableHead>
+                    <TableHead>Account ID</TableHead>
                     <TableHead>Type</TableHead>
                     {
                         !summary &&

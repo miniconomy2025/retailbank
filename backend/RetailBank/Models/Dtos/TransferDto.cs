@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using RetailBank.Extensions;
 using RetailBank.Models.Ledger;
+using RetailBank.Services;
 using RetailBank.Validation;
 
 namespace RetailBank.Models.Dtos;
@@ -28,10 +29,12 @@ public record TransferDto(
     string? ParentId,
     [property: Required]
     [property: Range(1, ulong.MaxValue)]
-    ulong Reference
+    ulong Reference,
+    [property: Required]
+    DateTime Timestamp
 )
 {
-    public TransferDto(LedgerTransfer transfer)
+    public TransferDto(LedgerTransfer transfer, SimulationControllerService simulation)
         : this(
             transfer.Id.ToHex(),
             transfer.TransferType,
@@ -39,7 +42,8 @@ public record TransferDto(
             transfer.CreditAccountId.ToString(),
             transfer.Amount,
             transfer.ParentId.HasValue ? transfer.ParentId.Value.ToHex() : null,
-            transfer.Reference
+            transfer.Reference,
+            DateTimeOffset.FromUnixTimeMilliseconds((long)simulation.TimestampToSim(transfer.Cursor / 1000000)).UtcDateTime
         )
     { }
 }

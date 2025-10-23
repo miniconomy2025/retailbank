@@ -22,7 +22,8 @@ public class SimulationControllerService(IOptions<SimulationOptions> options)
 
     public ulong TimestampToSim(ulong timestamp)
     {
-        var sim = (timestamp - UnixStartTime) * TimeScale + options.Value.SimulationStart;
-        return sim;
+        var sim = ((long)timestamp - (long)UnixStartTime) * TimeScale + (long)options.Value.SimulationStart;
+        sim = long.Clamp(sim, -62135596800000L, 253402300799999L);
+        return (ulong)sim;
     }
 }

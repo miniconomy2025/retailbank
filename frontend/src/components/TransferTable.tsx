@@ -11,12 +11,14 @@ import { formatMoney } from "@/utils/formatter";
 import { Badge } from "./ui/badge";
 import { Link } from "react-router-dom";
 import { accountLink, accountName } from "@/models/accounts";
+import { formatDate } from "@/lib/utils";
 
 export default function TransferTable({ transfers, accountId }: { transfers: Transfer[], accountId?: string }) {
   return (
         <Table className="transfer-table">
             <TableHeader>
                 <TableRow>
+                    <TableHead>Date</TableHead>
                     <TableHead>Transfer ID</TableHead>
                     <TableHead>Parent Transfer ID</TableHead>
                     <TableHead>Reference</TableHead>
@@ -39,6 +41,9 @@ export default function TransferTable({ transfers, accountId }: { transfers: Tra
             <TableBody>
                 {transfers?.map((transfer) => (
                     <TableRow id={`transfer-${transfer.transferId}`} className={TransferTypeInfo[transfer.transferType].className} key={transfer.transferId}>
+                        <TableCell className="text-left text-xs text-gray-500">
+                            {formatDate(new Date(transfer.timestamp))}
+                        </TableCell>
                         <TableCell className="text-left text-xs font-mono">
                             {transfer.transferId}
                         </TableCell>
